@@ -1,6 +1,7 @@
 import hashlib
-from functools import lru_cache
 from decimal import Decimal
+from functools import lru_cache
+
 
 class Packet:
     """A class that represents a packet.
@@ -14,6 +15,7 @@ class Packet:
         seq (int): The SEQ number.
         payload (str): The payload of the packet.
     """
+
     def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: Decimal, *, payload=None):
         self.src = src
         self.srcport = srcport

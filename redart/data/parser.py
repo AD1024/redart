@@ -1,11 +1,13 @@
 """PCAP file parser utilities"""
 import pcapkit
-import redart.logger as logger
-from redart.data.packet import Packet
 from pcapkit import interface
 from pcapkit.utilities.exceptions import ProtocolNotFound
 
+import redart.logger as logger
+from redart.data.packet import Packet
+
 logging = logger.get_logger("Parser")
+
 
 def parse_pcap(file: str, cache_file=None) -> list[Packet]:
     """Parse a PCAP file and return a list of packets.
@@ -35,7 +37,8 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
         try:
             tcp_info = frame[pcapkit.TCP]
         except ProtocolNotFound:
-            logging.warning('Packet %s is not a TCP packet', frame.name, exc_info=True)
+            logging.warning('Packet %s is not a TCP packet',
+                            frame.name, exc_info=True)
         try:
             packet = Packet(
                 frame.payload.src,
@@ -48,8 +51,9 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
             )
             extracted_trace.append(packet)
         except KeyError:
-            logging.warning('Packet %s is not an IP packet', str(frame), exc_info=True)
-    
+            logging.warning('Packet %s is not an IP packet',
+                            str(frame), exc_info=True)
+
     if cache_file is not None:
         import pickle
         with open(cache_file, 'wb') as f:

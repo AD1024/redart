@@ -1,8 +1,9 @@
-from redart.simulator import GroundTruthSimulator
 from redart.data.parser import parse_pcap
 from redart.logger import get_logger
+from redart.simulator import GroundTruthSimulator
 
 logging = get_logger("RunGroundTruth", default_level="DEBUG")
+
 
 def main(file: str):
     logging.info("Running ground truth simulator on %s", file)
@@ -19,7 +20,8 @@ def main(file: str):
                 print(
                     f"RTTs for ({packet.src} <-> {packet.dst}):\n{simulator.packet_tracker[key][1]}\n",
                 )
-            
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()

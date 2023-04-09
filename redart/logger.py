@@ -1,6 +1,7 @@
 import logging
 import os
 
+
 class LogFormatter(logging.Formatter):
     # https://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output
     grey = "\x1b[38;20m"
@@ -22,7 +23,8 @@ class LogFormatter(logging.Formatter):
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
-    
+
+
 def _logging_level(default='WARN'):
     '''
         REDART_LOG_LEVEL: The logging level for redart, possible values
