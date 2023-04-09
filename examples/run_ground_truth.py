@@ -15,9 +15,10 @@ def main(file: str):
         key = packet.to_src_dst_key()
         if key not in vis:
             vis.add(key)
-            print(
-                f"RTTs for ({packet.src} <-> {packet.dst}):\n{simulator.packet_tracker[key]}\n",
-            )
+            if simulator.packet_tracker[key][1]:
+                print(
+                    f"RTTs for ({packet.src} <-> {packet.dst}):\n{simulator.packet_tracker[key][1]}\n",
+                )
             
 if __name__ == "__main__":
     import argparse
