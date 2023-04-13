@@ -1,7 +1,8 @@
-from typing import TypeVar
+from typing import Callable, NewType, TypeVar
 
 from redart.data import Packet
 from redart.logger import get_logger
+from redart.simulator import EvictionTrait
 
 K = TypeVar('K')
 V = TypeVar('V')
@@ -13,8 +14,9 @@ class TrackerTrait(dict[K, V]):
     It is supposed to be used as a base class for RangeTracker and PacketTracker.
     """
 
-    def __init__(self, *, name=None):
+    def __init__(self, eviction_policy: Callable[[object], EvictionTrait], *, name=None):
         self.logger = get_logger(name or self.__class__.__name__)
+        self.eviction_policy = eviction_policy(self)
         super().__init__()
 
     def update(self, packet: K, packet_value: V):
@@ -28,6 +30,9 @@ class TrackerTrait(dict[K, V]):
         Evict a record given a new `packet` to be stored
         """
         raise NotImplementedError
+
+    def __setitem__(self, __key: K, __value: V) -> None:
+        super().__setitem__(__key, __value)
 
     def __contains__(self, __key: object) -> bool:
         super().__contains__(__key)
