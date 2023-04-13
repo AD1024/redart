@@ -4,7 +4,7 @@ from pcapkit import interface
 from pcapkit.utilities.exceptions import ProtocolNotFound
 
 import redart.logger as logger
-from redart.data.packet import Packet
+from redart.data.packet import Packet, PacketType
 
 logging = logger.get_logger("Parser")
 
@@ -48,6 +48,10 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
                 tcp_info.info.ack,
                 tcp_info.info.seq,
                 frame.info.time_epoch,
+                frame.info.length,
+                PacketType.ACK if tcp_info.flags.ack
+                else PacketType.SYN if tcp_info.flags.syn
+                else PacketType.SEQ,
             )
             extracted_trace.append(packet)
         except KeyError:

@@ -7,10 +7,6 @@ class GroundTruthSimulator(SimulatorTrait):
         super().__init__(None, {}, name="GroundTruthSimulator")
         self.record = {}
 
-    def run_trace(self, trace: list[Packet]):
-        for packet in trace:
-            self.process_packet(packet)
-
     def process_packet(self, packet: Packet):
         key = packet.to_src_dst_key()
         if key not in self.record:

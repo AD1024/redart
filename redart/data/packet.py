@@ -1,6 +1,13 @@
 import hashlib
 from decimal import Decimal
+from enum import IntEnum, auto
 from functools import lru_cache
+
+
+class PacketType(IntEnum):
+    ACK = auto()
+    SYN = auto()
+    SEQ = auto()
 
 
 class Packet:
@@ -16,7 +23,7 @@ class Packet:
         payload (str): The payload of the packet.
     """
 
-    def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: Decimal, *, payload=None):
+    def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: Decimal, packet_size: int, packet_type: PacketType, *, payload=None):
         self.src = src
         self.srcport = srcport
         self.dst = dst
@@ -25,6 +32,8 @@ class Packet:
         self.seq = seq
         self.payload = payload
         self.timestamp = timestamp
+        self.packet_size = packet_size
+        self.packet_type = packet_type
 
     def __str__(self):
         return f"Packet(src={self.src}, srcport={self.srcport}, dst={self.dst}, dstport={self.dstport}, ack={self.ack}, seq={self.seq}, payload={self.payload}, ts={self.timestamp})"
