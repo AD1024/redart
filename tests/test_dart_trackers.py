@@ -3,8 +3,8 @@ from decimal import Decimal
 
 from redart.data import Packet, PacketType
 from redart.data.parser import parse_pcap
-from redart.simulator.dart_sim import (DartSimulator, PacketTracker,
-                                       PacketTrackerEviction, RangeTracker)
+from redart.simulator.dart_sim import (DartSimulator, PacketTrackerEviction,
+                                       RangeTracker)
 
 os.environ.update({
     "REDART_LOG_LEVEL": "DEBUG"
