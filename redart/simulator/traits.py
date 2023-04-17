@@ -20,7 +20,7 @@ class TrackerTrait(dict[K, V]):
 
     def __init__(self, eviction_policy: Union[Callable[[object], None], EvictionTraitDecl], *, name=None):
         self.logger = get_logger(name or self.__class__.__name__)
-        if isinstance(eviction_policy, EvictionTrait):
+        if eviction_policy is not None:
             self.eviction_policy = eviction_policy(self)
         super().__init__()
 
