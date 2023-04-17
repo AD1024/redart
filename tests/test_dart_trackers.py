@@ -66,7 +66,7 @@ def test_flow_insertion_inf_space():
 
 
 def test_flow():
-    trace = parse_pcap("../data/smallFlows.pcap")
+    trace = parse_pcap("../data/test.pcap")
     range_tracker = RangeTracker(
         INF, PacketTrackerEviction, INF, None
     )
@@ -75,7 +75,7 @@ def test_flow():
     for pid in sim.peer_ids():
         peer_name = sim.get_peer_name(pid)
         try:
-            print("RTT for peer %s:%s <-> %s:%s => %s" %
+            print("RTT for peer %s:%s <-> %s:%s =>\n%s\n" %
                   (*peer_name, sim.peer_rtt_samples(pid)))
         except:
             sim.logger.warning(

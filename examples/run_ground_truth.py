@@ -18,7 +18,7 @@ def main(file: str):
             vis.add(key)
             if key in simulator.rtt_samples:
                 print(
-                    f"RTTs for ({packet.src} <-> {packet.dst}):\n{simulator.rtt_samples[key]}\n",
+                    f"RTTs for ({packet.src}:{packet.srcport} <-> {packet.dst}:{packet.dstport}):\n{simulator.rtt_samples[key]}\n",
                 )
 
 
