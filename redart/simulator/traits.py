@@ -1,11 +1,15 @@
-from typing import Callable, NewType, TypeVar
+from typing import Callable, Generic, NewType, TypeVar, Union
 
 from redart.data import Packet
 from redart.logger import get_logger
-from redart.simulator import EvictionTrait
 
 K = TypeVar('K')
 V = TypeVar('V')
+
+
+class EvictionTraitDecl(Generic[V]):
+    def evict(self, value: V, *args):
+        raise NotImplementedError
 
 
 class TrackerTrait(dict[K, V]):
@@ -14,16 +18,17 @@ class TrackerTrait(dict[K, V]):
     It is supposed to be used as a base class for RangeTracker and PacketTracker.
     """
 
-    def __init__(self, eviction_policy: Callable[[object], EvictionTrait], *, name=None):
+    def __init__(self, eviction_policy: Union[Callable[[object], None], EvictionTraitDecl], *, name=None):
         self.logger = get_logger(name or self.__class__.__name__)
-        self.eviction_policy = eviction_policy(self)
+        if isinstance(eviction_policy, EvictionTrait):
+            self.eviction_policy = eviction_policy(self)
         super().__init__()
 
     def update(self, packet: K, packet_value: V):
         super().update({packet: packet_value})
 
-    def get(self, packet: K):
-        super().get(packet)
+    def get(self, packet: K) -> V:
+        return super().get(packet)
 
     def evict(self, packet: K):
         """
@@ -35,7 +40,7 @@ class TrackerTrait(dict[K, V]):
         super().__setitem__(__key, __value)
 
     def __contains__(self, __key: object) -> bool:
-        super().__contains__(__key)
+        return super().__contains__(__key)
 
 
 class SimulatorTrait:
@@ -62,5 +67,15 @@ class SimulatorTrait:
     def process_packet(self, packet: Packet):
         raise NotImplementedError
 
-    def evict(self, new_packet: Packet):
+
+class EvictionTrait(EvictionTraitDecl[V]):
+    """
+    Eviction base class.
+    """
+
+    def __init__(self, tracker: TrackerTrait, *, name=None):
+        self.logger = get_logger(name or self.__class__.__name__)
+        self.tracker = tracker
+
+    def evict(self, value: V, *args):
         raise NotImplementedError

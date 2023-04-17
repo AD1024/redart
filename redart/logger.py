@@ -9,7 +9,7 @@ class LogFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+    format = "[%(levelname)s] <%(name)s> %(message)s (%(filename)s:%(lineno)d)"
 
     FORMATS = {
         logging.DEBUG: grey + format + reset,
@@ -46,6 +46,8 @@ def _logging_level(default='WARN'):
 
 def get_logger(name, *, default_level='WARN'):
     logger = logging.getLogger(name)
+    if len(logger.handlers) > 0:
+        return logger
     level = _logging_level(default_level)
     logger.setLevel(level)
     formatter = LogFormatter()
@@ -53,4 +55,5 @@ def get_logger(name, *, default_level='WARN'):
     ch.setLevel(level)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+    logger.propagate = False
     return logger
