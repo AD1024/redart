@@ -5,18 +5,8 @@ from functools import lru_cache
 
 
 class PacketType(IntEnum):
-    ACK = auto()
-    SYN = auto()
-    SEQ = auto()
-
-    def is_ack(self):
-        return self == PacketType.ACK
-
-    def is_seq(self):
-        return self == PacketType.SEQ
-
-    def is_syn(self):
-        return self == PacketType.SYN
+    ACK = 1
+    SEQ = 1 << 2
 
 
 class Packet:
@@ -52,10 +42,18 @@ class Packet:
         return self.__str__()
 
     def is_ack(self):
-        return self.packet_type.is_ack()
+        return self.packet_type == PacketType.ACK
 
     def is_seq(self):
-        return self.packet_type.is_seq()
+        return self.packet_type == PacketType.SEQ
+
+    @property
+    def size(self):
+        return self.packet_size
+
+    @property
+    def type(self):
+        return self.packet_type
 
     @lru_cache
     def to_src_dst_key(self):

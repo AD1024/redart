@@ -63,7 +63,7 @@ def _hash_packet_key(packet_key: Tuple[int, int]) -> int:
 
 
 def hash_packet_key(packet: Packet) -> int:
-    return _hash_packet_key((packet.to_src_dst_key(), packet.seq + packet.packet_size))
+    return _hash_packet_key((packet.to_src_dst_key(), packet.seq + packet.size))
 
 
 def preprocess_key(func):
@@ -71,7 +71,7 @@ def preprocess_key(func):
     def wrapper(self, packet_key: Union[PacketKeyT, Packet], *args, **kwargs):
         if isinstance(packet_key, Packet):
             packet_key = packet_key.to_src_dst_key(), packet_key.seq + \
-                packet_key.packet_size
+                packet_key.size
         return func(self, packet_key, *args, **kwargs)
     return wrapper
 
@@ -108,9 +108,9 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         if packet_key in self:
             entry = self[packet_key].tracking_range
             if packet.is_seq():
-                if entry.highest_eack < packet.seq + packet.packet_size:
+                if entry.highest_eack < packet.seq + packet.size:
                     return RangeTrackerValidateAction.VALID
-                if entry.highest_eack > packet.seq + packet.packet_size:
+                if entry.highest_eack > packet.seq + packet.size:
                     # Reset Case: SEQ less than right edge, signifying a retransmission
                     return RangeTrackerValidateAction.RESET
                 self.logger.warning(
@@ -169,7 +169,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                 if packet.is_seq():
                     self.logger.info(
                         "Update range due to SEQ %s -> %s @ %s", packet.src, packet.dst, packet.index)
-                    eack = packet.seq + packet.packet_size
+                    eack = packet.seq + packet.size
                     if packet.seq >= range_item.tracking_range.highest_eack:
                         if packet.seq == range_item.tracking_range.highest_eack:
                             range_item.tracking_range = MeasureRange(
@@ -208,7 +208,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                 # flow not in range tracker, check packet tracker
                 # if exists, then this is a retransmission and we can drop
                 # the entry in the packet tracker
-                eack = packet.seq + packet.packet_size
+                eack = packet.seq + packet.size
                 if packet in self.packet_tracker_ref:
                     self.logger.info("Drop packet due to retransmission: %s -> %s @ %s",
                                      packet.src, packet.dst, packet.index)
@@ -218,7 +218,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                 packet_value = RangeValueT(
                     rt_packet_key,
                     PacketInfo(
-                        packet.src, packet.dst, packet.srcport, packet.dstport, packet.packet_type,
+                        packet.src, packet.dst, packet.srcport, packet.dstport, packet.type,
                     ),
                     MeasureRange(packet.seq, eack),
                     packet.seq, eack, packet.timestamp, self.recirc if recirc is None else recirc,

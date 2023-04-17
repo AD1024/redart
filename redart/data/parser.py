@@ -49,7 +49,7 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
                 Decimal(frame.sniff_timestamp),
                 int(frame.tcp.len),
                 PacketType.SEQ if int(frame.tcp.len) != 0
-                else PacketType.ACK if int(frame.tcp.flags_ack) == 1 else PacketType.SYN,
+                else PacketType.ACK,
                 index=i
             )
             extracted_trace.append(packet)
