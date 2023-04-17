@@ -32,7 +32,7 @@ class Packet:
         payload (str): The payload of the packet.
     """
 
-    def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: Decimal, packet_size: int, packet_type: PacketType, *, payload=None):
+    def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: Decimal, packet_size: int, packet_type: PacketType, *, payload=None, index=None):
         self.src = src
         self.srcport = srcport
         self.dst = dst
@@ -43,6 +43,7 @@ class Packet:
         self.timestamp = timestamp
         self.packet_size = packet_size
         self.packet_type = packet_type
+        self.index = index
 
     def __str__(self):
         return f"Packet(src={self.src}, srcport={self.srcport}, dst={self.dst}, dstport={self.dstport}, ack={self.ack}, seq={self.seq}, payload={self.payload}, ts={self.timestamp})"

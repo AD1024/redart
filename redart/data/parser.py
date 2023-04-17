@@ -1,4 +1,6 @@
 """PCAP file parser utilities"""
+from decimal import Decimal
+
 import pcapkit
 from pcapkit import interface
 from pcapkit.utilities.exceptions import ProtocolNotFound
@@ -23,7 +25,7 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
     """
     extractor = interface.extract(file,
                                   nofile=True,
-                                  engine='default')
+                                  engine='pyshark')
     # Frame structure:
     # frame: Frame
     # frame[IP]: IP-level Packets
@@ -33,25 +35,22 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
     frames = extractor.frame
     extracted_trace = []
 
-    for frame in frames:
-        try:
-            tcp_info = frame[pcapkit.TCP]
-        except ProtocolNotFound:
-            logging.warning('Packet %s is not a TCP packet',
-                            frame.name, exc_info=True)
+    for (i, frame) in enumerate(frames):
+        if not hasattr(frame, 'tcp') or not hasattr(frame, 'ip'):
+            continue
         try:
             packet = Packet(
-                frame.payload.src,
-                tcp_info.src,
-                frame.payload.dst,
-                tcp_info.dst,
-                tcp_info.info.ack,
-                tcp_info.info.seq,
-                frame.info.time_epoch,
-                frame.info.length,
-                PacketType.ACK if tcp_info.flags.ack
-                else PacketType.SYN if tcp_info.flags.syn
-                else PacketType.SEQ,
+                frame.ip.src,
+                int(frame.tcp.srcport),
+                frame.ip.dst,
+                int(frame.tcp.dstport),
+                int(frame.tcp.ack),
+                int(frame.tcp.seq),
+                Decimal(frame.sniff_timestamp),
+                int(frame.tcp.len),
+                PacketType.SEQ if int(frame.tcp.len) != 0
+                else PacketType.ACK if int(frame.tcp.flags_ack) == 1 else PacketType.SYN,
+                index=i
             )
             extracted_trace.append(packet)
         except KeyError:

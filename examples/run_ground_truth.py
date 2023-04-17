@@ -16,9 +16,9 @@ def main(file: str):
         key = packet.to_src_dst_key()
         if key not in vis:
             vis.add(key)
-            if simulator.packet_tracker[key][1]:
+            if key in simulator.rtt_samples:
                 print(
-                    f"RTTs for ({packet.src} <-> {packet.dst}):\n{simulator.packet_tracker[key][1]}\n",
+                    f"RTTs for ({packet.src} <-> {packet.dst}):\n{simulator.rtt_samples[key]}\n",
                 )
 
 

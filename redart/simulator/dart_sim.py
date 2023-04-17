@@ -107,6 +107,15 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
     def validate(self, packet_key: RangeKeyT, packet: Packet) -> RangeTrackerValidateAction:
         if packet_key in self:
             entry = self[packet_key].tracking_range
+            if packet.is_seq():
+                if entry.highest_eack < packet.seq + packet.packet_size:
+                    return RangeTrackerValidateAction.VALID
+                if entry.highest_eack > packet.seq + packet.packet_size:
+                    # Reset Case: SEQ less than right edge, signifying a retransmission
+                    return RangeTrackerValidateAction.RESET
+                self.logger.warning(
+                    "Ignore SEQ (retransmission) %s -> %s @ %s", packet.src, packet.dst, packet.index)
+                return RangeTrackerValidateAction.IGNORE
             if packet.is_ack():
                 if entry.highest_ack < packet.ack <= entry.highest_eack:
                     return RangeTrackerValidateAction.VALID
@@ -115,23 +124,14 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                     return RangeTrackerValidateAction.RESET
                 if packet.ack <= entry.highest_ack or packet.ack > entry.highest_eack:
                     self.logger.warning(
-                        "Ignoring ACK due to duplicate ACK: %s -> %s @ %s", packet.src, packet.dst, packet.timestamp)
+                        "Ignoring ACK due to duplicate ACK: %s -> %s @ %s", packet.src, packet.dst, packet.index)
                     return RangeTrackerValidateAction.IGNORE
-            if packet.is_seq():
-                if entry.highest_eack < packet.seq + packet.packet_size:
-                    return RangeTrackerValidateAction.VALID
-                if entry.highest_eack > packet.seq + packet.packet_size:
-                    # Reset Case: SEQ less than right edge, signifying a retransmission
-                    return RangeTrackerValidateAction.RESET
-                self.logger.warning(
-                    "Ignore SEQ (retransmission) %s -> %s @ %s", packet.src, packet.dst, packet.timestamp)
-                return RangeTrackerValidateAction.IGNORE
             self.logger.warning("SYN not supported for now")
             return RangeTrackerValidateAction.IGNORE
         if packet.is_seq():
             return RangeTrackerValidateAction.VALID
-        self.logger.warning("Seeing an ACK before SEQ: %s -> %s @ %s",
-                            packet.src, packet.dst, packet.timestamp)
+        # self.logger.warning("Seeing an ACK before SEQ: %s -> %s @ %s",
+        #                     packet.src, packet.dst, packet.timestamp)
         return RangeTrackerValidateAction.IGNORE
 
     def update(self, packet: Packet, recirc=None):
@@ -146,7 +146,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         """
         if recirc is not None:
             self.logger.info(
-                "Recirculating packet: %s -> %s @ %s".format(packet.src, packet.dst, packet.timestamp))
+                "Recirculating packet: %s -> %s @ %s", packet.src, packet.dst, packet.index)
         rt_packet_key = packet.to_src_dst_key() % self.capacity
         action = self.validate(rt_packet_key, packet)
         if action == RangeTrackerValidateAction.IGNORE:
@@ -168,10 +168,10 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                 range_item = self.get(rt_packet_key)
                 if packet.is_seq():
                     self.logger.info(
-                        "Update range due to SEQ {}".format(packet))
+                        "Update range due to SEQ %s -> %s @ %s", packet.src, packet.dst, packet.index)
                     eack = packet.seq + packet.packet_size
                     if packet.seq >= range_item.tracking_range.highest_eack:
-                        if eack == range_item.tracking_range.highest_eack:
+                        if packet.seq == range_item.tracking_range.highest_eack:
                             range_item.tracking_range = MeasureRange(
                                 range_item.tracking_range.highest_ack, eack)
                         else:
@@ -179,14 +179,15 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                             range_item.tracking_range = MeasureRange(
                                 packet.seq, eack
                             )
+                        self.packet_tracker_ref.update(packet, range_item)
                     else:
+                        self.logger.warning(
+                            "Measurement Range Violation due to SEQ @ %s", packet.index)
                         self.pop(rt_packet_key)
-                        if recirc is None:
-                            self.packet_tracker_ref.pop(packet)
-                if packet.is_ack():
+                elif packet.is_ack():
                     if packet not in self:
                         self.logger.warning(
-                            "Record for {} -> {} @ {} not fount".format(packet.src, packet.dst, packet.timestamp))
+                            "Record for %s -> %s @ %s not fount", packet.src, packet.dst, packet.timestamp)
                         return
                     range_item = self.get(rt_packet_key)
                     # Update measurement range
@@ -209,8 +210,8 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                 # the entry in the packet tracker
                 eack = packet.seq + packet.packet_size
                 if packet in self.packet_tracker_ref:
-                    self.logger.info("Drop packet due to retransmission: {} -> {} @ {}".format(
-                        packet.src, packet.dst, packet.timestamp))
+                    self.logger.info("Drop packet due to retransmission: %s -> %s @ %s",
+                                     packet.src, packet.dst, packet.index)
                     self.packet_tracker_ref.pop(packet)
                     return
                 # if not, then this is a new flow, we insert in the packet tracker
@@ -246,7 +247,7 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
         self.capacity = capacity
         self.range_tracker_ref = range_tracker
         self.peers: set[int] = set()
-        self.peers_record: dict[int, Tuple[str, str]] = {}
+        self.peers_record: dict[int, Tuple[str, int, str, int]] = {}
         # (src <-> dst) -> (rtt samples)
         self.rtt_samples: dict[int, list[Decimal]] = {}
         # (src, dst, srcport, dstport) -> (src <-> dst)
@@ -258,12 +259,12 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
         # packet_key = _hash_packet_key((packet.to_src_dst_key(), packet.ack))
         if packet.to_src_dst_key() not in self.peers_record:
             self.peers_record[packet.to_src_dst_key()] = (
-                packet.src, packet.dst)
+                packet.src, packet.srcport, packet.dst, packet.dstport)
             self.peers.add(packet.to_src_dst_key())
         packet_item = self[packet]
         if packet_item is None:
-            self.logger.warning("Flow not found: %s -> %s",
-                                packet.src, packet.dst)
+            self.logger.warning("Flow not found: %s -> %s @ %s",
+                                packet.src, packet.dst, packet.index)
         else:
             recorded_key = packet_item.packet_ref.to_src_dst_key()
             if recorded_key != packet.to_src_dst_key():
@@ -280,11 +281,12 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                 self.rtt_samples[recorded_key].append(rtt)
 
     def update(self, packet: Packet, packet_value: PacketValueT):
-        self.logger.info("Update SEQ packet: %s -> %s", packet.src, packet.dst)
+        self.logger.info("Update SEQ packet: %s -> %s @ %s",
+                         packet.src, packet.dst, packet.index)
         pt_packet_key = hash_packet_key(packet)
         pt_packet_key = pt_packet_key % self.capacity
         if packet in self:
-            self.evict(packet_value.packet_ref, packet_value)
+            self.evict(packet, packet_value)
         else:
             if len(self) < self.capacity:
                 self[packet] = packet_value
