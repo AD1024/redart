@@ -63,7 +63,9 @@ def _hash_packet_key(packet_key: Tuple[int, int]) -> int:
 
 
 def hash_packet_key(packet: Packet) -> int:
-    return _hash_packet_key((packet.to_src_dst_key(), packet.seq + packet.size))
+    if packet.is_seq():
+        return _hash_packet_key((packet.to_src_dst_key(), packet.seq + packet.size))
+    return _hash_packet_key((packet.to_src_dst_key(), packet.ack))
 
 
 def preprocess_key(func):
@@ -266,19 +268,20 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
             self.logger.warning("Flow not found: %s -> %s @ %s",
                                 packet.src, packet.dst, packet.index)
         else:
-            recorded_key = packet_item.packet_ref.to_src_dst_key()
-            if recorded_key != packet.to_src_dst_key():
-                self.logger.info("Flow changed; drop packet")
+            recorded_key = hash_packet_key(packet_item.packet_ref)
+            if recorded_key != hash_packet_key(packet):
+                self.logger.warning("Flow changed; drop packet")
             else:
                 # recompute rtt
                 rtt = packet.timestamp - packet_item.timestamp
                 tcp_tuple = (packet.src, packet.dst,
                              packet.srcport, packet.dstport)
+                record_key = packet.to_src_dst_key()
                 if tcp_tuple not in self.flow_map:
-                    self.flow_map[tcp_tuple] = recorded_key
-                if recorded_key not in self.rtt_samples:
-                    self.rtt_samples[recorded_key] = []
-                self.rtt_samples[recorded_key].append(rtt)
+                    self.flow_map[tcp_tuple] = record_key
+                if record_key not in self.rtt_samples:
+                    self.rtt_samples[record_key] = []
+                self.rtt_samples[record_key].append(rtt)
 
     def update(self, packet: Packet, packet_value: PacketValueT):
         self.logger.info("Update SEQ packet: %s -> %s @ %s",
@@ -303,22 +306,22 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
 
     # @preprocess_key
     def __setitem__(self, __key: Packet, __value: PacketValueT) -> None:
-        if __key.is_ack():
-            return super().__setitem__(_hash_packet_key((__key.to_src_dst_key(), __key.ack)) % self.capacity, __value)
+        # if __key.is_ack():
+        #     return super().__setitem__(_hash_packet_key((__key.to_src_dst_key(), __key.ack)) % self.capacity, __value)
         return super().__setitem__(hash_packet_key(__key) % self.capacity, __value)
 
     # @preprocess_key
     def __getitem__(self, __key: Packet) -> PacketValueT:
         if __key not in self:
             return None
-        if __key.is_ack():
-            return super().__getitem__(_hash_packet_key((__key.to_src_dst_key(), __key.ack)) % self.capacity)
+        # if __key.is_ack():
+        #     return super().__getitem__(_hash_packet_key((__key.to_src_dst_key(), __key.ack)) % self.capacity)
         return super().__getitem__(hash_packet_key(__key) % self.capacity)
 
     # @preprocess_key
     def __contains__(self, __key: Packet) -> bool:
-        if __key.is_ack():
-            return super().__contains__(_hash_packet_key((__key.to_src_dst_key(), __key.ack)) % self.capacity)
+        # if __key.is_ack():
+        #     return super().__contains__(_hash_packet_key((__key.to_src_dst_key(), __key.ack)) % self.capacity)
         return super().__contains__(hash_packet_key(__key) % self.capacity)
 
 
