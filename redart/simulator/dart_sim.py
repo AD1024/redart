@@ -181,6 +181,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                             range_item.tracking_range = MeasureRange(
                                 packet.seq, eack
                             )
+                        range_item.packet_ref = packet
                         self.packet_tracker_ref.update(packet, range_item)
                     else:
                         self.logger.warning(
@@ -189,7 +190,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                 elif packet.is_ack():
                     if packet not in self:
                         self.logger.warning(
-                            "Record for %s -> %s @ %s not fount", packet.src, packet.dst, packet.timestamp)
+                            "Record for %s -> %s @ %s not found", packet.src, packet.dst, packet.timestamp)
                         return
                     range_item = self.get(rt_packet_key)
                     # Update measurement range

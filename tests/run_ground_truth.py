@@ -5,7 +5,7 @@ from redart.simulator import GroundTruthSimulator
 logging = get_logger("RunGroundTruth", default_level="DEBUG")
 
 
-def main(file: str, trace = None):
+def main(file: str, trace=None):
     logging.info("Running ground truth simulator on %s", file)
     simulator = GroundTruthSimulator()
     if trace is None:

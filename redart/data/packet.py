@@ -36,7 +36,7 @@ class Packet:
         self.index = index
 
     def __str__(self):
-        return f"Packet(src={self.src}, srcport={self.srcport}, dst={self.dst}, dstport={self.dstport}, ack={self.ack}, seq={self.seq}, payload={self.payload}, ts={self.timestamp})"
+        return f"Packet(src={self.src}, srcport={self.srcport}, dst={self.dst}, dstport={self.dstport}, ack={self.ack}, seq={self.seq}, size={self.size}, ts={self.timestamp})"
 
     def __repr__(self):
         return self.__str__()

@@ -65,7 +65,7 @@ def test_flow_insertion_inf_space():
               (peer_name[0], peer_name[1], sim.peer_rtt_samples(pid)))
 
 
-def test_flow(file: str, trace = None):
+def test_flow(file: str, trace=None):
     if trace is None:
         trace = parse_pcap(file)
     range_tracker = RangeTracker(
@@ -83,11 +83,11 @@ def test_flow(file: str, trace = None):
         except:
             sim.logger.warning(
                 "Failed to get RTT for peer %s:%s <-> %s:%s", *peer_name)
-            
+
     return result, trace
 
 
 if __name__ == '__main__':
     test_tracker_operations()
     test_flow_insertion_inf_space()
-    test_flow("../data/smallFlows.pcap")
+    test_flow("../data/test.pcap")

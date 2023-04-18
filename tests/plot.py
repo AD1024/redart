@@ -1,12 +1,10 @@
+import matplotlib.pyplot as plt
+import numpy
 import run_ground_truth
 import test_dart_trackers
 
-import numpy
-import matplotlib.pyplot as plt
-
 # f = "../data/smallFlows.pcap"
 f = "../data/test.pcap"
-
 
 
 truth = run_ground_truth.main(f)
@@ -18,9 +16,11 @@ for pkt in truth[0]:
     if key not in truth[1]:
         continue
     if pkt.src > pkt.dst:
-        truth_values[(pkt.src, pkt.srcport, pkt.dst, pkt.dstport)] = truth[1][key]
+        truth_values[(pkt.src, pkt.srcport, pkt.dst,
+                      pkt.dstport)] = truth[1][key]
     else:
-        truth_values[(pkt.dst, pkt.dstport, pkt.src, pkt.srcport)] = truth[1][key]
+        truth_values[(pkt.dst, pkt.dstport, pkt.src,
+                      pkt.srcport)] = truth[1][key]
 
 dart = test_dart_trackers.test_flow(f, truth[2])
 dart_values = {}
@@ -37,7 +37,6 @@ for pkt in dart[0]:
 # print("==================")
 # print(dart_values.keys())
 # print(truth_values.keys())
-
 
 
 max_key = ""
