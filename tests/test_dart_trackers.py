@@ -10,7 +10,7 @@ os.environ.update({
     "REDART_LOG_LEVEL": "DEBUG"
 })
 
-INF = 1145141919810
+INF = 19260817
 
 
 def test_tracker_operations():
