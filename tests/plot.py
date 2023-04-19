@@ -3,8 +3,8 @@ import numpy
 import run_ground_truth
 import test_dart_trackers
 
-# f = "../data/smallFlows.pcap"
-f = "../data/test.pcap"
+f = "../data/smallFlows.pcap"
+# f = "../data/test.pcap"
 
 
 truth = run_ground_truth.main(f)
@@ -48,7 +48,7 @@ for key in set(dart_values.keys()).intersection(set(truth_values.keys())):
 
 
 mx = float(max(max(truth_values[max_key]), max(dart_values[max_key])))
-bins = numpy.linspace(0, 0.25, 40)
+bins = numpy.linspace(0, 200, 40)
 
 print("truth", truth_values[max_key])
 print("")

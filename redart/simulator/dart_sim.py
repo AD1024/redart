@@ -114,6 +114,8 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                     return RangeTrackerValidateAction.VALID
                 if entry.highest_eack > packet.seq + packet.size:
                     # Reset Case: SEQ less than right edge, signifying a retransmission
+                    self.logger.warning(
+                        "Resetting range due to SEQ @ %s", packet.index)
                     return RangeTrackerValidateAction.RESET
                 self.logger.warning(
                     "Ignore SEQ (retransmission) %s -> %s @ %s", packet.src, packet.dst, packet.index)
@@ -123,6 +125,8 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                     return RangeTrackerValidateAction.VALID
                 if entry.highest_ack == packet.ack:
                     # Reset Case: ACK coming for the left edge
+                    self.logger.warning(
+                        "Resetting range due to ACK @ %s", packet.index)
                     return RangeTrackerValidateAction.RESET
                 if packet.ack <= entry.highest_ack or packet.ack > entry.highest_eack:
                     self.logger.warning(
@@ -182,6 +186,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                                 packet.seq, eack
                             )
                         range_item.packet_ref = packet
+                        range_item.timestamp = packet.timestamp
                         self.packet_tracker_ref.update(packet, range_item)
                     else:
                         self.logger.warning(
@@ -282,6 +287,7 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                     self.flow_map[tcp_tuple] = record_key
                 if record_key not in self.rtt_samples:
                     self.rtt_samples[record_key] = []
+                # self.logger.warning("RTT with %s - %s", packet_item.packet_ref.index)
                 self.rtt_samples[record_key].append(rtt)
 
     def update(self, packet: Packet, packet_value: PacketValueT):

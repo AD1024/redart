@@ -22,7 +22,7 @@ class Packet:
         payload (str): The payload of the packet.
     """
 
-    def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: Decimal, packet_size: int, packet_type: PacketType, *, payload=None, index=None):
+    def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: float, packet_size: int, packet_type: PacketType, *, payload=None, index=None):
         self.src = src
         self.srcport = srcport
         self.dst = dst
