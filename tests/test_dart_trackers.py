@@ -1,6 +1,7 @@
 import os
 from decimal import Decimal
 
+import redart
 from redart.data import Packet, PacketType
 from redart.data.parser import parse_pcap
 from redart.simulator.dart_sim import (DartSimulator, PacketTrackerEviction,
@@ -11,6 +12,7 @@ os.environ.update({
 })
 
 INF = 66145576821500209494471478855081
+redart.init(redart.config.TimestampScale.MILLISECOND)
 
 
 def test_tracker_operations():

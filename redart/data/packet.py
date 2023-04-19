@@ -3,6 +3,8 @@ from decimal import Decimal
 from enum import IntEnum, auto
 from functools import lru_cache
 
+from redart.config import TimestampScale, get_config
+
 
 class PacketType(IntEnum):
     ACK = 1
@@ -30,7 +32,7 @@ class Packet:
         self.ack = ack
         self.seq = seq
         self.payload = payload
-        self.timestamp = timestamp
+        self._timestamp = float(timestamp)
         self.packet_size = packet_size
         self.packet_type = packet_type
         self.index = index
@@ -55,6 +57,16 @@ class Packet:
     def type(self):
         return self.packet_type
 
+    @property
+    def timestamp(self):
+        cfg = get_config()
+        if cfg.timescale == TimestampScale.SECOND:
+            return self._timestamp
+        elif cfg.timescale == TimestampScale.MILLISECOND:
+            return self._timestamp * 1e3
+        elif cfg.timescale == TimestampScale.MICROSECOND:
+            return self._timestamp * 1e6
+
     @lru_cache
     def to_src_dst_key(self):
         """
@@ -64,7 +76,6 @@ class Packet:
         dst_hash = int(hashlib.sha256(self.dst.encode()).hexdigest(), 16)
         return src_hash ^ dst_hash ^ self.srcport ^ self.dstport
 
-    @lru_cache
     def to_dict(self):
         return {
             "src": self.src,
