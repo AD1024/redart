@@ -86,12 +86,16 @@ class RangeTrackerValidateAction(enum.IntEnum):
 
 class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
     def evict(self, values: Tuple[Packet, PacketValueT], *args):
-        self.logger.info("Evicting %s", values)
+        self.logger.info("Evicting %s -> %s @ %s",
+                         values[0].src, values[0].dst, values[0].index)
         self.tracker: PacketTracker
         (old_packet, new_value) = values
         assert old_packet in self.tracker
         old_packet_item = self.tracker[old_packet]
         self.tracker[old_packet] = new_value
+        current_ts = self.tracker.range_tracker_ref[old_packet].timestamp
+        if current_ts < new_value.timestamp:
+            return
         if old_packet_item.recirc_quota == 0:
             return
         self.tracker.range_tracker_ref.update(
@@ -106,13 +110,13 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         self.recirc = recirc
         super().__init__(eviction_policy, name=name)
 
-    def validate(self, packet_key: RangeKeyT, packet: Packet) -> RangeTrackerValidateAction:
+    def validate(self, packet_key: RangeKeyT, packet: Packet, recirc: bool) -> RangeTrackerValidateAction:
         if packet_key in self:
             entry = self[packet_key].tracking_range
             if packet.is_seq():
-                if entry.highest_eack < packet.seq + packet.size:
+                if entry.highest_eack == packet.seq:
                     return RangeTrackerValidateAction.VALID
-                if entry.highest_eack > packet.seq + packet.size:
+                if entry.highest_eack < packet.seq:
                     # Reset Case: SEQ less than right edge, signifying a retransmission
                     self.logger.warning(
                         "Resetting range due to SEQ @ %s", packet.index)
@@ -154,10 +158,10 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
             self.logger.info(
                 "Recirculating packet: %s -> %s @ %s", packet.src, packet.dst, packet.index)
         rt_packet_key = packet.to_src_dst_key() % self.capacity
-        action = self.validate(rt_packet_key, packet)
+        action = self.validate(rt_packet_key, packet, recirc is not None)
         if action == RangeTrackerValidateAction.IGNORE:
-            # if recirc is None:
-            #     self.packet_tracker_ref.pop(packet)
+            if packet.is_seq():
+                self.pop(rt_packet_key)
             return
         if action == RangeTrackerValidateAction.RESET:
             if packet not in self:
@@ -236,13 +240,16 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                 self.packet_tracker_ref.update(
                     packet, packet_value)
 
-    def get(self, packet: Union[PacketKeyT, Packet]) -> RangeValueT:
+    def get(self, packet: Union[RangeKeyT, Packet]) -> RangeValueT:
         if isinstance(packet, Packet):
             packet = packet.to_src_dst_key()
         return super().get(packet % self.capacity)
 
     def __setitem__(self, __key: RangeKeyT, __value: RangeValueT):
         super().__setitem__(__key % self.capacity, __value)
+
+    def __getitem__(self, __key: Union[RangeKeyT, Packet]) -> RangeValueT:
+        return self.get(__key)
 
     def __contains__(self, packet: Union[RangeKeyT, Packet]) -> bool:
         if isinstance(packet, Packet):

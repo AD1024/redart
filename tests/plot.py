@@ -22,7 +22,7 @@ for pkt in truth[0]:
         truth_values[(pkt.dst, pkt.dstport, pkt.src,
                       pkt.srcport)] = truth[1][key]
 
-dart = test_dart_trackers.test_flow(f, truth[2])
+dart = test_dart_trackers.test_flow(f, truth[2], capacity=512)
 dart_values = {}
 
 # print(dart[0])

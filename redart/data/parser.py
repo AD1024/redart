@@ -1,7 +1,7 @@
 """PCAP file parser utilities"""
 from decimal import Decimal
+from functools import lru_cache
 
-import pcapkit
 from pcapkit import interface
 from pcapkit.utilities.exceptions import ProtocolNotFound
 
@@ -11,6 +11,7 @@ from redart.data.packet import Packet, PacketType
 logging = logger.get_logger("Parser")
 
 
+@lru_cache(typed=True)
 def parse_pcap(file: str, cache_file=None) -> list[Packet]:
     """Parse a PCAP file and return a list of packets.
 

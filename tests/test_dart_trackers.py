@@ -65,11 +65,11 @@ def test_flow_insertion_inf_space():
               (peer_name[0], peer_name[1], sim.peer_rtt_samples(pid)))
 
 
-def test_flow(file: str, trace=None):
+def test_flow(file: str, trace=None, capacity: int = INF):
     if trace is None:
         trace = parse_pcap(file)
     range_tracker = RangeTracker(
-        INF, PacketTrackerEviction, INF, None
+        capacity, PacketTrackerEviction, INF, None
     )
     sim = DartSimulator(range_tracker)
     sim.run_trace(trace)
@@ -87,7 +87,27 @@ def test_flow(file: str, trace=None):
     return result, trace
 
 
+def test_limited_memory(file: str, trace: list[Packet] = None):
+    if trace is None:
+        trace = parse_pcap(file)
+    range_tracker = RangeTracker(
+        5, PacketTrackerEviction, INF, None
+    )
+    sim = DartSimulator(range_tracker)
+    sim.run_trace(trace)
+    result = []
+    for pid in sim.peer_ids():
+        peer_name = sim.get_peer_name(pid)
+        try:
+            print("RTT for peer %s:%s <-> %s:%s =>\n%s\n" %
+                  (*peer_name, sim.peer_rtt_samples(pid)))
+            result.append((*peer_name, sim.peer_rtt_samples(pid)))
+        except:
+            sim.logger.warning(
+                "Failed to get RTT for peer %s:%s <-> %s:%s", *peer_name)
+    return result
+
+
 if __name__ == '__main__':
-    test_tracker_operations()
-    test_flow_insertion_inf_space()
-    test_flow("../data/test.pcap")
+    # test_tracker_operations()c
+    test_limited_memory("../data/test.pcap")
