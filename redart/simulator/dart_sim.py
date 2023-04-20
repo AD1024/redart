@@ -110,20 +110,15 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         self.recirc = recirc
         super().__init__(eviction_policy, name=name)
 
-    def validate(self, packet_key: RangeKeyT, packet: Packet, recirc: bool) -> RangeTrackerValidateAction:
+    def validate(self, packet_key: RangeKeyT, packet: Packet, recirc: bool = False) -> RangeTrackerValidateAction:
         if packet_key in self:
             entry = self[packet_key].tracking_range
             if packet.is_seq():
-                if entry.highest_eack == packet.seq:
+                if entry.highest_eack <= packet.seq:
                     return RangeTrackerValidateAction.VALID
-                if entry.highest_eack < packet.seq:
-                    # Reset Case: SEQ less than right edge, signifying a retransmission
-                    self.logger.warning(
-                        "Resetting range due to SEQ @ %s", packet.index)
-                    return RangeTrackerValidateAction.RESET
                 self.logger.warning(
                     "Ignore SEQ (retransmission) %s -> %s @ %s", packet.src, packet.dst, packet.index)
-                return RangeTrackerValidateAction.IGNORE
+                return RangeTrackerValidateAction.RESET
             if packet.is_ack():
                 if entry.highest_ack < packet.ack <= entry.highest_eack:
                     return RangeTrackerValidateAction.VALID
