@@ -1,8 +1,11 @@
+import redart
 from redart.data.parser import parse_pcap
 from redart.logger import get_logger
 from redart.simulator import GroundTruthSimulator
 
 logging = get_logger("RunGroundTruth", default_level="DEBUG")
+
+redart.init(redart.config.TimestampScale.MICROSECOND)
 
 
 def main(file: str, trace=None):

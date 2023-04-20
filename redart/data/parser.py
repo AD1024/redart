@@ -47,7 +47,7 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
                 int(frame.tcp.dstport),
                 int(frame.tcp.ack),
                 int(frame.tcp.seq),
-                int(float(frame.sniff_timestamp) * 1e6),
+                float(frame.sniff_timestamp),
                 int(frame.tcp.len),
                 PacketType.SEQ if int(frame.tcp.len) != 0
                 else PacketType.ACK,
