@@ -3,9 +3,12 @@ import numpy
 import run_ground_truth
 import test_dart_trackers
 
+import redart
+
 f = "../data/smallFlows.pcap"
 # f = "../data/test.pcap"
 
+redart.init(redart.config.TimestampScale.MICROSECOND)
 
 truth = run_ground_truth.main(f)
 truth_values = {}
@@ -22,7 +25,7 @@ for pkt in truth[0]:
         truth_values[(pkt.dst, pkt.dstport, pkt.src,
                       pkt.srcport)] = truth[1][key]
 
-dart = test_dart_trackers.test_flow(f, truth[2], capacity=512)
+dart = test_dart_trackers.test_flow(f, truth[2], capacity=1024)
 dart_values = {}
 
 # print(dart[0])
