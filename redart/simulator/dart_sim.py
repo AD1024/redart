@@ -1,5 +1,6 @@
 """DART simulator re-implementation with better interfaces"""
 import enum
+import random
 import typing
 from dataclasses import dataclass
 from decimal import Decimal
@@ -102,6 +103,30 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
             old_packet, recirc=old_packet_item.recirc_quota - 1)
 
 
+class RandomEvictor(EvictionTrait[PacketValueT]):
+    def evict(self, new_value: PacketValueT, *args):
+        self.tracker: PacketTracker
+        entry = random.choice(list(self.tracker.keys()))
+        evicted_item = self.tracker[entry]
+        self.logger.info("Evicting %s -> %s @ %s", evicted_item.src,
+                         evicted_item.dst, evicted_item.index)
+        self.tracker[entry] = new_value
+
+
+class RandomEvictorWithRecirc(EvictionTrait[PacketValueT]):
+    def evict(self, new_value: PacketValueT, *args):
+        self.tracker: PacketTracker
+        entry = random.choice(list(self.tracker.keys()))
+        evicted_item = self.tracker[entry]
+        self.logger.info("Evicting %s -> %s @ %s", evicted_item.src,
+                         evicted_item.dst, evicted_item.index)
+        self.tracker[entry] = new_value
+        if evicted_item.recirc_quota == 0:
+            return
+        self.tracker.range_tracker_ref.update(
+            evicted_item, recirc=evicted_item.recirc_quota - 1)
+
+
 class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
     def __init__(self, packet_tracker_capacity: int, packet_tracker_eviction: object, capacity: int, eviction_policy: object, *, name="DartRangeTracker", recirc=3):
         self.capacity = capacity
@@ -110,7 +135,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         self.recirc = recirc
         super().__init__(eviction_policy, name=name)
 
-    def validate(self, packet_key: RangeKeyT, packet: Packet, recirc: bool = False) -> RangeTrackerValidateAction:
+    def validate(self, packet_key: RangeKeyT, packet: Packet) -> RangeTrackerValidateAction:
         if packet_key in self:
             entry = self[packet_key].tracking_range
             if packet.is_seq():
@@ -153,7 +178,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
             self.logger.info(
                 "Recirculating packet: %s -> %s @ %s", packet.src, packet.dst, packet.index)
         rt_packet_key = packet.to_src_dst_key() % self.capacity
-        action = self.validate(rt_packet_key, packet, recirc is not None)
+        action = self.validate(rt_packet_key, packet)
         if action == RangeTrackerValidateAction.IGNORE:
             if packet.is_seq():
                 self.pop(rt_packet_key)

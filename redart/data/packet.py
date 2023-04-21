@@ -9,6 +9,8 @@ from redart.config import TimestampScale, get_config
 class PacketType(IntEnum):
     ACK = 1
     SEQ = 1 << 2
+    SYN = 1 << 3
+    FIN = 1 << 4
 
 
 class Packet:
