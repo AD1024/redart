@@ -1,6 +1,5 @@
 import hashlib
-from decimal import Decimal
-from enum import IntEnum, auto
+from enum import IntEnum
 from functools import lru_cache
 
 from redart.config import TimestampScale, get_config

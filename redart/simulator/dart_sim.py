@@ -4,7 +4,6 @@ import random
 import typing
 from dataclasses import dataclass
 from decimal import Decimal
-from functools import wraps
 from typing import Tuple, Union
 
 from redart.config import get_config
@@ -186,8 +185,6 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
             return RangeTrackerValidateAction.IGNORE
         if packet.is_seq():
             return RangeTrackerValidateAction.VALID
-        # self.logger.warning("Seeing an ACK before SEQ: %s -> %s @ %s",
-        #                     packet.src, packet.dst, packet.timestamp)
         return RangeTrackerValidateAction.IGNORE
 
     def update(self, packet: Packet, recirc=None):

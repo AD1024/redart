@@ -1,3 +1,4 @@
+"""Redart configuration module."""
 import enum
 from dataclasses import dataclass
 

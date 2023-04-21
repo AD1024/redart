@@ -1,5 +1,5 @@
+"""Logging module for redart"""
 import logging
-import os
 
 
 class LogFormatter(logging.Formatter):
