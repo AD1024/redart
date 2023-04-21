@@ -24,7 +24,7 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
     Returns:
         list: A list of packets.
     """
-    if os.path.isfile(cache_file):
+    if cache_file is not None and os.path.isfile(cache_file):
         with open(cache_file, 'rb') as fd:
             return pickle.load(fd)
 

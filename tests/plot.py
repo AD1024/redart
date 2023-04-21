@@ -1,7 +1,9 @@
+import matplotlib
 import matplotlib.pyplot as plt
-import numpy
+import numpy as np
 import run_ground_truth
 import test_dart_trackers
+import functools
 
 import redart
 
@@ -10,9 +12,8 @@ f = "../data/smallFlows.pcap"
 
 redart.init(redart.config.TimestampScale.MICROSECOND)
 
-truth = run_ground_truth.main(f)
+truth = run_ground_truth.main(f, cache_file="../data/smallFlows.cache")
 truth_values = {}
-
 
 for pkt in truth[0]:
     key = pkt.to_src_dst_key()
@@ -42,36 +43,45 @@ for pkt in dart[0]:
 # print(truth_values.keys())
 
 
-max_key = ""
-max_val = -1
+cmap = plt.colormaps["Set1"]
+
+def plot_horizontal_bar(ax, ls, labels, colors):
+    y_pos = np.arange(len(ls))
+    ax.barh(y_pos, ls, alpha=0.8, color=colors)
+    ax.set_yticks(y_pos, labels=labels)
+    for i in range(len(y_pos)):
+        ax.text(ls[i], y_pos[i], ls[i])
+    ax.set_ylabel("RTT Tool")
+    ax.set_title("Number of RTT samples")
+
+def plot_hist(ax, key, title):
+    mx = float(max(max(truth_values[key]), max(dart_values[key])))
+    bins = np.linspace(0, 200, 40)
+    ax.hist(truth_values[key], bins, alpha=0.6, label="TCPtrace", color=cmap(0))
+    ax.hist(dart_values[key], bins, alpha=0.6, label="ReDart", color=cmap(1))
+    ax.legend(loc='upper right')
+    ax.set_title(title)
+
+
+
+lens = {}
 for key in set(dart_values.keys()).intersection(set(truth_values.keys())):
-    if len(dart_values[key]) > max_val:
-        max_val = len(dart_values[key])
-        max_key = key
+    lens[key] = len(dart_values[key])
+
+hist, axs = plt.subplots(1, 2)
+
+max_key = max(lens, key=lens.get)
+plot_hist(axs[0], max_key, "")
+lens.pop(max_key)
+max_key = max(lens, key=lens.get)
+plot_hist(axs[1], max_key, "")
+
+hist.savefig("hist.png", dpi=300)
+
+bar, axs = plt.subplots(1, 1)
+count_entries = lambda d: functools.reduce(lambda x, y: x + len(y), d, 0)
+plot_horizontal_bar(axs, [count_entries(dart_values), count_entries(truth_values)], ["ReDart", "TCPtrace"], [cmap(0), cmap(1)])
+bar.savefig("bar.png", dpi=300)
 
 
-mx = float(max(max(truth_values[max_key]), max(dart_values[max_key])))
-bins = numpy.linspace(0, 200, 40)
-
-print("truth", truth_values[max_key])
-print("")
-print("dart", dart_values[max_key])
-
-plt.hist(truth_values[max_key], bins, alpha=0.5, label="Ground Truth")
-plt.hist(dart_values[max_key], bins, alpha=0.5, label="ReDart")
-plt.legend(loc='upper right')
-plt.show()
-
-# for key in dart_values.keys():
-#     try:
-#         print(key, truth_values[key], dart_values[key])
-#         if len(truth_values[key]) > 10:
-#             mx = float(max(max(truth_values[key]), max(dart_values[key])))
-#             # print("mx = ", mx)
-#             bins = numpy.linspace(0, mx, 30)
-#             plt.hist(truth_values[key], bins, alpha=0.5, label="Ground Truth")
-#             plt.hist(dart_values[key], bins, alpha=0.5, label="ReDart")
-#             plt.legend(loc='upper right')
-#             plt.show()
-#     except Exception as e:
-#         raise e
+print(len(truth_values), len(dart_values))
