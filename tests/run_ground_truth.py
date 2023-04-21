@@ -8,7 +8,7 @@ logging = get_logger("RunGroundTruth", default_level="DEBUG")
 redart.init(redart.config.TimestampScale.MICROSECOND)
 
 
-def main(file: str, trace=None, cache_file: str = ""):
+def main(file: str, trace=None, cache_file: str = None):
     logging.info("Running ground truth simulator on %s", file)
     simulator = GroundTruthSimulator()
     if trace is None:
