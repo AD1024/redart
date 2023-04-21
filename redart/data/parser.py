@@ -1,9 +1,9 @@
 """PCAP file parser utilities"""
-from decimal import Decimal
+import os
+import pickle
 from functools import lru_cache
 
 from pcapkit import interface
-from pcapkit.utilities.exceptions import ProtocolNotFound
 
 import redart.logger as logger
 from redart.data.packet import Packet, PacketType
@@ -24,6 +24,10 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
     Returns:
         list: A list of packets.
     """
+    if os.path.isfile(cache_file):
+        with open(cache_file, 'rb') as fd:
+            return pickle.load(fd)
+
     extractor = interface.extract(file,
                                   nofile=True,
                                   engine='pyshark')
@@ -59,8 +63,7 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
                             str(frame), exc_info=True)
 
     if cache_file is not None:
-        import pickle
-        with open(cache_file, 'wb') as f:
-            pickle.dump(extracted_trace, f)
+        with open(cache_file, 'wb') as fd:
+            pickle.dump(extracted_trace, fd)
 
     return extracted_trace
