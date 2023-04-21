@@ -65,19 +65,17 @@ def _hash_packet_key(packet_key: Tuple[int, int]) -> int:
 
 
 def hash_packet_key(packet: Packet) -> int:
+    """
+    Hash function for Packet Tracker.
+    If the packet is a SEQ packet, then we hash it with (flow_key, EACK)
+    otherwise (if it is an ACK packet), we hash it with (flow_key, ACK)
+    This is because the tracker only tracks SEQ packets with the EACKs,
+    when we encounter an ACK packet, we need to check whether the ACK corresponds
+    to any EACK the tracker preivously encountered.
+    """
     if packet.is_seq():
         return _hash_packet_key((packet.to_src_dst_key(), packet.seq + packet.size))
     return _hash_packet_key((packet.to_src_dst_key(), packet.ack))
-
-
-def preprocess_key(func):
-    @wraps(func)
-    def wrapper(self, packet_key: Union[PacketKeyT, Packet], *args, **kwargs):
-        if isinstance(packet_key, Packet):
-            packet_key = packet_key.to_src_dst_key(), packet_key.seq + \
-                packet_key.size
-        return func(self, packet_key, *args, **kwargs)
-    return wrapper
 
 
 class RangeTrackerValidateAction(enum.IntEnum):
@@ -87,6 +85,10 @@ class RangeTrackerValidateAction(enum.IntEnum):
 
 
 class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
+    """
+    Eviction policy proposed in the Dart paper.
+    """
+
     def evict(self, values: Tuple[Packet, PacketValueT], *args):
         self.logger.info("Evicting %s -> %s @ %s",
                          values[0].src, values[0].dst, values[0].index)
@@ -105,6 +107,10 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
 
 
 class RandomEvictor(EvictionTrait[PacketValueT]):
+    """
+    Random eviction without recirculation.
+    """
+
     def evict(self, new_value: PacketValueT, *args):
         self.tracker: PacketTracker
         entry = random.choice(list(self.tracker.keys()))
@@ -115,6 +121,10 @@ class RandomEvictor(EvictionTrait[PacketValueT]):
 
 
 class RandomEvictorWithRecirc(EvictionTrait[PacketValueT]):
+    """
+    Random eviction with recirculation.
+    """
+
     def evict(self, new_value: PacketValueT, *args):
         self.tracker: PacketTracker
         entry = random.choice(list(self.tracker.keys()))
@@ -129,6 +139,13 @@ class RandomEvictorWithRecirc(EvictionTrait[PacketValueT]):
 
 
 class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
+    """
+    The range tracker tracks the range of SEQ/ACK that
+    would possible yield accurate RTT measurement.
+
+    The entry of a flow is the `update` function.
+    """
+
     def __init__(self, packet_tracker_capacity: int, packet_tracker_eviction: object, capacity: int, eviction_policy: object, *, name="DartRangeTracker", recirc=3):
         self.ignore_syn = get_config().ignore_syn
         self.capacity = capacity
@@ -287,6 +304,14 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
 
 
 class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
+    """
+    The packet tracker tracks preivously seen SEQ packets.
+    In principle, users are not supposed to mutate the data structure
+    but only query the measured RTTs via interfaces provided by `DartSimulator`.
+
+    The instance of a packet tracker is handled by the range tracker.
+    """
+
     def __init__(self, range_tracker: RangeTracker, capacity: int, eviction_policy: object, *, name="DartPacketTracker"):
         self.capacity = capacity
         self.range_tracker_ref = range_tracker
@@ -300,7 +325,6 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
 
     def match(self, packet: Packet):
         self.logger.info("Match packet: %s -> %s", packet.src, packet.dst)
-        # packet_key = _hash_packet_key((packet.to_src_dst_key(), packet.ack))
         if packet.to_src_dst_key() not in self.peers_record:
             self.peers_record[packet.to_src_dst_key()] = (
                 packet.src, packet.srcport, packet.dst, packet.dstport)
@@ -323,7 +347,6 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                     self.flow_map[tcp_tuple] = record_key
                 if record_key not in self.rtt_samples:
                     self.rtt_samples[record_key] = []
-                # self.logger.warning("RTT with %s - %s", packet_item.packet_ref.index)
                 self.rtt_samples[record_key].append(rtt)
 
     def update(self, packet: Packet, packet_value: PacketValueT):
@@ -347,28 +370,23 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
     def pop(self, packet: Packet) -> PacketValueT:
         return super().pop(hash_packet_key(packet) % self.capacity, None)
 
-    # @preprocess_key
     def __setitem__(self, __key: Packet, __value: PacketValueT) -> None:
-        # if __key.is_ack():
-        #     return super().__setitem__(_hash_packet_key((__key.to_src_dst_key(), __key.ack)) % self.capacity, __value)
         return super().__setitem__(hash_packet_key(__key) % self.capacity, __value)
 
-    # @preprocess_key
     def __getitem__(self, __key: Packet) -> PacketValueT:
         if __key not in self:
             return None
-        # if __key.is_ack():
-        #     return super().__getitem__(_hash_packet_key((__key.to_src_dst_key(), __key.ack)) % self.capacity)
         return super().__getitem__(hash_packet_key(__key) % self.capacity)
 
-    # @preprocess_key
     def __contains__(self, __key: Packet) -> bool:
-        # if __key.is_ack():
-        #     return super().__contains__(_hash_packet_key((__key.to_src_dst_key(), __key.ack)) % self.capacity)
         return super().__contains__(hash_packet_key(__key) % self.capacity)
 
 
 class DartSimulator(SimulatorTrait):
+    """
+    The DART simulator.
+    """
+
     def __init__(self, range_tracker: RangeTracker, *, name="DartSim"):
         self.range_tracker = range_tracker
         super().__init__(self.range_tracker, self.range_tracker.packet_tracker_ref, name=name)
