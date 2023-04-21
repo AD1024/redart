@@ -7,12 +7,10 @@ from redart.data.parser import parse_pcap
 from redart.simulator.dart_sim import (DartSimulator, PacketTrackerEviction,
                                        RangeTracker)
 
-os.environ.update({
-    "REDART_LOG_LEVEL": "DEBUG"
-})
-
 INF = 66145576821500209494471478855081
-redart.init(redart.config.TimestampScale.MILLISECOND, ignore_syn=False)
+redart.init(redart.config.TimestampScale.MILLISECOND,
+            ignore_syn=False,
+            logging_level="DEBUG")
 
 
 def test_tracker_operations():

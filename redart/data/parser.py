@@ -8,8 +8,6 @@ from pcapkit import interface
 import redart.logger as logger
 from redart.data.packet import Packet, PacketType
 
-logging = logger.get_logger("Parser")
-
 
 def build_packet_type(tcp_info):
     if int(tcp_info.len) == 0:
@@ -37,6 +35,7 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
     Returns:
         list: A list of packets.
     """
+    logging = logger.get_logger("Parser")
     if cache_file is not None and os.path.isfile(cache_file):
         with open(cache_file, 'rb') as fd:
             return pickle.load(fd)

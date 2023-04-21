@@ -12,6 +12,7 @@ class TimestampScale(enum.IntEnum):
 class RedartConfig:
     timescale: TimestampScale
     ignore_syn: bool
+    logging_level: str
 
 
 _redart_config: RedartConfig = None

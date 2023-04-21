@@ -25,7 +25,7 @@ class LogFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-def _logging_level(default='WARN'):
+def _logging_level():
     '''
         REDART_LOG_LEVEL: The logging level for redart, possible values
             - DEBUG
@@ -34,7 +34,9 @@ def _logging_level(default='WARN'):
             - ERROR
             - CRITICAL
     '''
-    redart_logging_level = os.environ.get('REDART_LOG_LEVEL', default)
+    from redart.config import get_config
+    redart_logging_level = get_config().logging_level
+
     return {
         'DEBUG': logging.DEBUG,
         'INFO': logging.INFO,
@@ -44,11 +46,11 @@ def _logging_level(default='WARN'):
     }.get(redart_logging_level, logging.WARNING)
 
 
-def get_logger(name, *, default_level='WARN'):
+def get_logger(name: str):
     logger = logging.getLogger(name)
     if len(logger.handlers) > 0:
         return logger
-    level = _logging_level(default_level)
+    level = _logging_level()
     logger.setLevel(level)
     formatter = LogFormatter()
     ch = logging.StreamHandler()
