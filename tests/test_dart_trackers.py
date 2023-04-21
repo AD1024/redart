@@ -12,7 +12,7 @@ os.environ.update({
 })
 
 INF = 66145576821500209494471478855081
-redart.init(redart.config.TimestampScale.MILLISECOND)
+redart.init(redart.config.TimestampScale.MILLISECOND, ignore_syn=False)
 
 
 def test_tracker_operations():
@@ -112,4 +112,5 @@ def test_limited_memory(file: str, trace: list[Packet] = None, cache_file: str =
 
 if __name__ == '__main__':
     # test_tracker_operations()c
-    test_limited_memory("../data/test.pcap", cache_file="../data/test.pcap.cache")
+    test_limited_memory("../data/test.pcap",
+                        cache_file="../data/test.pcap.cache")

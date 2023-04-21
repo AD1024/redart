@@ -11,6 +11,19 @@ from redart.data.packet import Packet, PacketType
 logging = logger.get_logger("Parser")
 
 
+def build_packet_type(tcp_info):
+    if int(tcp_info.len) == 0:
+        ptype = PacketType.ACK
+    else:
+        ptype = PacketType.SEQ
+
+    if int(tcp_info.flags_syn):
+        ptype |= PacketType.SYN
+    if int(tcp_info.flags_fin):
+        ptype |= PacketType.FIN
+    return ptype
+
+
 @lru_cache(typed=True)
 def parse_pcap(file: str, cache_file=None) -> list[Packet]:
     """Parse a PCAP file and return a list of packets.
@@ -53,8 +66,7 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
                 int(frame.tcp.seq),
                 float(frame.sniff_timestamp),
                 int(frame.tcp.len),
-                PacketType.SEQ if int(frame.tcp.len) != 0
-                else PacketType.ACK,
+                build_packet_type(frame.tcp),
                 index=i
             )
             extracted_trace.append(packet)

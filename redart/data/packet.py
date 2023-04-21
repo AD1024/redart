@@ -46,10 +46,16 @@ class Packet:
         return self.__str__()
 
     def is_ack(self):
-        return self.packet_type == PacketType.ACK
+        return (self.packet_type & PacketType.ACK) != 0
 
     def is_seq(self):
-        return self.packet_type == PacketType.SEQ
+        return (self.packet_type & PacketType.SEQ) != 0
+
+    def is_fin(self):
+        return (self.packet_type & PacketType.FIN) != 0
+
+    def is_syn(self):
+        return (self.packet_type & PacketType.SYN) != 0
 
     @property
     def size(self):

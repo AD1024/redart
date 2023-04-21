@@ -1,9 +1,10 @@
+import functools
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import run_ground_truth
 import test_dart_trackers
-import functools
 
 import redart
 
@@ -45,6 +46,7 @@ for pkt in dart[0]:
 
 cmap = plt.colormaps["Set1"]
 
+
 def plot_horizontal_bar(ax, ls, labels, colors):
     y_pos = np.arange(len(ls))
     ax.barh(y_pos, ls, alpha=0.8, color=colors)
@@ -54,14 +56,15 @@ def plot_horizontal_bar(ax, ls, labels, colors):
     ax.set_ylabel("RTT Tool")
     ax.set_title("Number of RTT samples")
 
+
 def plot_hist(ax, key, title):
     mx = float(max(max(truth_values[key]), max(dart_values[key])))
     bins = np.linspace(0, 200, 40)
-    ax.hist(truth_values[key], bins, alpha=0.6, label="TCPtrace", color=cmap(0))
+    ax.hist(truth_values[key], bins, alpha=0.6,
+            label="TCPtrace", color=cmap(0))
     ax.hist(dart_values[key], bins, alpha=0.6, label="ReDart", color=cmap(1))
     ax.legend(loc='upper right')
     ax.set_title(title)
-
 
 
 lens = {}
@@ -79,8 +82,11 @@ plot_hist(axs[1], max_key, "")
 hist.savefig("hist.png", dpi=300)
 
 bar, axs = plt.subplots(1, 1)
-count_entries = lambda d: functools.reduce(lambda x, y: x + len(y), d, 0)
-plot_horizontal_bar(axs, [count_entries(dart_values), count_entries(truth_values)], ["ReDart", "TCPtrace"], [cmap(0), cmap(1)])
+def count_entries(d): return functools.reduce(lambda x, y: x + len(y), d, 0)
+
+
+plot_horizontal_bar(axs, [count_entries(dart_values), count_entries(
+    truth_values)], ["ReDart", "TCPtrace"], [cmap(0), cmap(1)])
 bar.savefig("bar.png", dpi=300)
 
 

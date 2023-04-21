@@ -11,6 +11,7 @@ class TimestampScale(enum.IntEnum):
 @dataclass
 class RedartConfig:
     timescale: TimestampScale
+    ignore_syn: bool
 
 
 _redart_config: RedartConfig = None

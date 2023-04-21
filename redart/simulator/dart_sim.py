@@ -7,6 +7,7 @@ from decimal import Decimal
 from functools import wraps
 from typing import Tuple, Union
 
+from redart.config import get_config
 from redart.data import Packet, PacketType
 from redart.simulator import EvictionTrait, SimulatorTrait, TrackerTrait
 from redart.simulator.exceptions import EntryNotFountException
@@ -129,6 +130,7 @@ class RandomEvictorWithRecirc(EvictionTrait[PacketValueT]):
 
 class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
     def __init__(self, packet_tracker_capacity: int, packet_tracker_eviction: object, capacity: int, eviction_policy: object, *, name="DartRangeTracker", recirc=3):
+        self.ignore_syn = get_config().ignore_syn
         self.capacity = capacity
         self.packet_tracker_ref = PacketTracker(
             self, packet_tracker_capacity, packet_tracker_eviction, name="DartPacketTracker")
@@ -136,6 +138,13 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         super().__init__(eviction_policy, name=name)
 
     def validate(self, packet_key: RangeKeyT, packet: Packet) -> RangeTrackerValidateAction:
+        if packet.is_syn() and self.ignore_syn:
+            self.logger.warning("Ignoring SYN packet @ %s", packet.index)
+            return RangeTrackerValidateAction.IGNORE
+        if packet.is_fin():
+            self.logger.warning("Flow finished for %s -> %s @ %s",
+                                packet.src, packet.dst, packet.index)
+            return RangeTrackerValidateAction.IGNORE
         if packet_key in self:
             entry = self[packet_key].tracking_range
             if packet.is_seq():
@@ -180,8 +189,8 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         rt_packet_key = packet.to_src_dst_key() % self.capacity
         action = self.validate(rt_packet_key, packet)
         if action == RangeTrackerValidateAction.IGNORE:
-            if packet.is_seq():
-                self.pop(rt_packet_key)
+            if packet.is_seq() or packet.is_fin() or packet.is_syn():
+                self.pop(rt_packet_key, None)
             return
         if action == RangeTrackerValidateAction.RESET:
             if packet not in self:

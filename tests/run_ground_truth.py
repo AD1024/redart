@@ -32,6 +32,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str, help="The path to the PCAP file")
-    parser.add_argument("cache_file", type=str, help="The path to the cache file")
+    parser.add_argument("cache_file", type=str,
+                        help="The path to the cache file")
     args = parser.parse_args()
     main(args.file, cache_file=args.cache_file)
