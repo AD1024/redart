@@ -8,11 +8,11 @@ logging = get_logger("RunGroundTruth", default_level="DEBUG")
 redart.init(redart.config.TimestampScale.MICROSECOND)
 
 
-def main(file: str, trace=None):
+def main(file: str, trace=None, cache_file: str = ""):
     logging.info("Running ground truth simulator on %s", file)
     simulator = GroundTruthSimulator()
     if trace is None:
-        trace = parse_pcap(file)
+        trace = parse_pcap(file, cache_file)
     simulator.run_trace(trace)
 
     vis = set()
@@ -32,5 +32,6 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str, help="The path to the PCAP file")
+    parser.add_argument("cache_file", type=str, help="The path to the cache file")
     args = parser.parse_args()
-    main(args.file)
+    main(args.file, cache_file=args.cache_file)

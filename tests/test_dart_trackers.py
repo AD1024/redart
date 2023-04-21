@@ -89,9 +89,9 @@ def test_flow(file: str, trace=None, capacity: int = INF):
     return result, trace
 
 
-def test_limited_memory(file: str, trace: list[Packet] = None):
+def test_limited_memory(file: str, trace: list[Packet] = None, cache_file: str = None):
     if trace is None:
-        trace = parse_pcap(file)
+        trace = parse_pcap(file, cache_file)
     range_tracker = RangeTracker(
         5, PacketTrackerEviction, INF, None
     )
@@ -112,4 +112,4 @@ def test_limited_memory(file: str, trace: list[Packet] = None):
 
 if __name__ == '__main__':
     # test_tracker_operations()c
-    test_limited_memory("../data/test.pcap")
+    test_limited_memory("../data/test.pcap", cache_file="../data/test.pcap.cache")
