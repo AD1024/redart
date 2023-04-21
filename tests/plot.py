@@ -7,12 +7,14 @@ import functools
 
 import redart
 
-f = "../data/smallFlows.pcap"
-# f = "../data/test.pcap"
+# dataset = "smallFlows"
+dataset = "bigFlows"
+# dataset = "test"
+f = "../data/{}.pcap".format(dataset)
 
 redart.init(redart.config.TimestampScale.MICROSECOND)
 
-truth = run_ground_truth.main(f, cache_file="../data/smallFlows.cache")
+truth = run_ground_truth.main(f, cache_file=f+".cache")
 truth_values = {}
 
 for pkt in truth[0]:
@@ -76,12 +78,12 @@ lens.pop(max_key)
 max_key = max(lens, key=lens.get)
 plot_hist(axs[1], max_key, "")
 
-hist.savefig("hist.png", dpi=300)
+hist.savefig("figures/{}_hist.png".format(dataset), dpi=300)
 
 bar, axs = plt.subplots(1, 1)
 count_entries = lambda d: functools.reduce(lambda x, y: x + len(y), d, 0)
 plot_horizontal_bar(axs, [count_entries(dart_values), count_entries(truth_values)], ["ReDart", "TCPtrace"], [cmap(0), cmap(1)])
-bar.savefig("bar.png", dpi=300)
+bar.savefig("figures/{}_bar.png".format(dataset), dpi=300)
 
 
 print(len(truth_values), len(dart_values))
