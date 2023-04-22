@@ -9,13 +9,15 @@ class GroundTruthSimulator(SimulatorTrait):
         self.rtt_samples = {}
         self.highest_eack = {}
 
+    # A reference rather than ground truth
+    # When retransmission, we pessimistically take with the first SEQ packet
     def process_packet(self, packet: Packet):
         key = packet.to_src_dst_key()
         if packet.is_seq():
             eack = packet.seq + packet.packet_size
             if (key, eack) not in self.record:
                 if key in self.highest_eack:
-                    if self.highest_eack[key] >= eack:
+                    if self.highest_eack[key] >= eack:  # Retransmission
                         return
                 self.record[key, eack] = packet
             if key not in self.highest_eack:

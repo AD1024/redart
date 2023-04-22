@@ -8,8 +8,8 @@ import test_dart_trackers
 
 import redart
 
-# dataset = "smallFlows"
-dataset = "bigFlows"
+dataset = "smallFlows"
+# dataset = "bigFlows"
 # dataset = "test"
 f = "../data/{}.pcap".format(dataset)
 

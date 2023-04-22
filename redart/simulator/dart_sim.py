@@ -34,8 +34,8 @@ class PacketInfo:
 
 @dataclass
 class MeasureRange:
-    highest_ack: int
-    highest_eack: int
+    highest_ack: int  # Left edge
+    highest_eack: int  # Right edge
 
 
 @dataclass
@@ -95,14 +95,26 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
         (old_packet, new_value) = values
         assert old_packet in self.tracker
         old_packet_item = self.tracker[old_packet]
-        self.tracker[old_packet] = new_value
-        current_ts = self.tracker.range_tracker_ref[old_packet].timestamp
-        if current_ts < new_value.timestamp:
+        packet_in_table_timestamp = old_packet_item.timestamp
+        incoming_packet_timestamp = new_value.timestamp
+        if incoming_packet_timestamp < packet_in_table_timestamp:
+            # Already after recirculation
+            self.tracker[old_packet] = new_value
             return
-        if old_packet_item.recirc_quota == 0:
-            return
-        self.tracker.range_tracker_ref.update(
-            old_packet, recirc=old_packet_item.recirc_quota - 1)
+        else:
+            # Recirculation
+            # recirc_quota is implemented more as a safeguard mechanism in Dart
+            if old_packet_item.recirc_quota == 0:
+                self.tracker[old_packet] = new_value
+                return
+            self.tracker[old_packet] = new_value
+            self.tracker.range_tracker_ref.update(
+                old_packet, recirc=old_packet_item.recirc_quota - 1)
+
+        # current_ts = self.tracker.range_tracker_ref[old_packet].timestamp # Getting the timestamp of the corresponding flow
+        # Preventing repeated recirculation
+        # if current_ts < new_value.timestamp:
+        #     return
 
 
 class RandomEvictor(EvictionTrait[PacketValueT]):
@@ -142,7 +154,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
     The range tracker tracks the range of SEQ/ACK that
     would possible yield accurate RTT measurement.
 
-    The entry of a flow is the `update` function.
+    The `update` function is invoked when a flow enters RangeTracker.
     """
 
     def __init__(self, packet_tracker_capacity: int, packet_tracker_eviction: object, capacity: int, eviction_policy: object, *, name="DartRangeTracker", recirc=3):
@@ -183,13 +195,13 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                     return RangeTrackerValidateAction.IGNORE
             self.logger.warning("SYN not supported for now")
             return RangeTrackerValidateAction.IGNORE
-        if packet.is_seq():
+        if packet.is_seq():  # A new flow seen
             return RangeTrackerValidateAction.VALID
         return RangeTrackerValidateAction.IGNORE
 
     def update(self, packet: Packet, recirc=None):
         """
-        Upon reciving a new flow:
+        Upon receiving a new flow:
             1. Validate the flow by checking ACK | SEQ with (left, right) range
                This will automatically shift the range towards the highest-byte SEQ
             2. If valid
@@ -228,7 +240,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                             range_item.tracking_range = MeasureRange(
                                 range_item.tracking_range.highest_ack, eack)
                         else:
-                            # exceeding current measurement range
+                            # exceeding current measurement range i.e. the "hole" case
                             range_item.tracking_range = MeasureRange(
                                 packet.seq, eack
                             )
@@ -285,7 +297,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
 
     def get(self, packet: Union[RangeKeyT, Packet]) -> RangeValueT:
         if isinstance(packet, Packet):
-            packet = packet.to_src_dst_key()
+            packet = packet.to_src_dst_key()  # Flow key
         return super().get(packet % self.capacity)
 
     def __setitem__(self, __key: RangeKeyT, __value: RangeValueT):
