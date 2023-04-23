@@ -129,7 +129,7 @@ class PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation(EvictionTrait
         self.tracker: PacketTracker
         (old_packet, new_value) = values
         assert old_packet in self.tracker
-        if random.uniform(0,1) < self.probability:
+        if random.uniform(0, 1) < self.probability:
             self.tracker[old_packet] = new_value
 
 
@@ -152,14 +152,14 @@ class PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation(EvictionTra
         incoming_packet_timestamp = new_value.timestamp
         if incoming_packet_timestamp < packet_in_table_timestamp:
             # Already after recirculation
-            if random.uniform(0,1) < 1-self.probability:
+            if random.uniform(0, 1) < 1-self.probability:
                 self.tracker[old_packet] = new_value
             return
         else:
             # Recirculation
             # recirc_quota is implemented more as a safeguard mechanism in Dart
             if old_packet_item.recirc_quota == 0:
-                if random.uniform(0,1) < 1-self.probability:
+                if random.uniform(0, 1) < 1-self.probability:
                     self.tracker[old_packet] = new_value
                 return
             self.tracker[old_packet] = new_value
@@ -413,6 +413,7 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                          packet.src, packet.dst, packet.index)
         pt_packet_key = hash_packet_key(packet)
         pt_packet_key = pt_packet_key % self.capacity
+        # AnnC: pt_packet_key seems not used?
         if packet in self:
             self.evict(packet, packet_value)
         else:
