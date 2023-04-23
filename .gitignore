@@ -2,6 +2,7 @@
 **/*.pickle
 **/*.cache
 **/*.png
+./tests/figures/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

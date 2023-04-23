@@ -1,3 +1,4 @@
+import argparse
 import functools
 
 import matplotlib
@@ -7,10 +8,22 @@ import run_ground_truth
 import test_dart_trackers
 
 import redart
+from redart.simulator import dart_sim
 
-dataset = "smallFlows"
-# dataset = "bigFlows"
-# dataset = "test"
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset", type=str, default="test")
+parser.add_argument("--tracker-size", type=int, default=1001)
+parser.add_argument("--policy", type=str, default="dart")
+
+eviction_policies = {
+    "dart": dart_sim.PacketTrackerEviction,
+    "prob": dart_sim.PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation,
+    "prob_recirc": dart_sim.PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation,
+}
+
+args = parser.parse_args()
+
+dataset = args.dataset
 f = "../data/{}.pcap".format(dataset)
 
 redart.init(redart.config.TimestampScale.MICROSECOND)
@@ -29,7 +42,8 @@ for pkt in truth[0]:
         truth_values[(pkt.dst, pkt.dstport, pkt.src,
                       pkt.srcport)] = truth[1][key]
 
-dart = test_dart_trackers.test_flow(f, truth[2])
+dart = test_dart_trackers.test_flow(
+    f, truth[2], capacity=args.tracker_size, policy=eviction_policies[args.policy])
 dart_values = {}
 
 # print(dart[0])

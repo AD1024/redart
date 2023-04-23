@@ -111,11 +111,6 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
             self.tracker.range_tracker_ref.update(
                 old_packet, recirc=old_packet_item.recirc_quota - 1)
 
-        # current_ts = self.tracker.range_tracker_ref[old_packet].timestamp # Getting the timestamp of the corresponding flow
-        # Preventing repeated recirculation
-        # if current_ts < new_value.timestamp:
-        #     return
-
 
 class PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation(EvictionTrait[Tuple[Packet, PacketValueT]]):
     """
@@ -165,38 +160,6 @@ class PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation(EvictionTra
             self.tracker[old_packet] = new_value
             self.tracker.range_tracker_ref.update(
                 old_packet, recirc=old_packet_item.recirc_quota - 1)
-
-
-# class RandomEvictor(EvictionTrait[PacketValueT]):
-#     """
-#     Random eviction without recirculation.
-#     """
-
-#     def evict(self, new_value: PacketValueT, *args):
-#         self.tracker: PacketTracker
-#         entry = random.choice(list(self.tracker.keys()))
-#         evicted_item = self.tracker[entry]
-#         self.logger.info("Evicting %s -> %s @ %s", evicted_item.src,
-#                          evicted_item.dst, evicted_item.index)
-#         self.tracker[entry] = new_value
-
-
-# class RandomEvictorWithRecirc(EvictionTrait[PacketValueT]):
-#     """
-#     Random eviction with recirculation.
-#     """
-
-#     def evict(self, new_value: PacketValueT, *args):
-#         self.tracker: PacketTracker
-#         entry = random.choice(list(self.tracker.keys()))
-#         evicted_item = self.tracker[entry]
-#         self.logger.info("Evicting %s -> %s @ %s", evicted_item.src,
-#                          evicted_item.dst, evicted_item.index)
-#         self.tracker[entry] = new_value
-#         if evicted_item.recirc_quota == 0:
-#             return
-#         self.tracker.range_tracker_ref.update(
-#             evicted_item, recirc=evicted_item.recirc_quota - 1)
 
 
 class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):

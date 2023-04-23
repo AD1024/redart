@@ -4,8 +4,11 @@ from decimal import Decimal
 import redart
 from redart.data import Packet, PacketType
 from redart.data.parser import parse_pcap
-from redart.simulator.dart_sim import (DartSimulator, PacketTrackerEviction, PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation, PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation,
-                                       RangeTracker)
+from redart.simulator.dart_sim import (
+    DartSimulator, PacketTrackerEviction,
+    PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation,
+    PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation,
+    RangeTracker)
 
 INF = 66145576821500209494471478855081
 redart.init(redart.config.TimestampScale.MILLISECOND,
@@ -65,11 +68,11 @@ def test_flow_insertion_inf_space():
               (peer_name[0], peer_name[1], sim.peer_rtt_samples(pid)))
 
 
-def test_flow(file: str, trace=None, capacity: int = INF):
+def test_flow(file: str, trace=None, capacity: int = INF, policy: PacketTrackerEviction = PacketTrackerEviction):
     if trace is None:
         trace = parse_pcap(file)
     range_tracker = RangeTracker(
-        capacity, PacketTrackerEviction, INF, None
+        capacity, policy, INF, None
     )
     sim = DartSimulator(range_tracker)
     sim.run_trace(trace)
