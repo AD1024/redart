@@ -117,36 +117,86 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
         #     return
 
 
-class RandomEvictor(EvictionTrait[PacketValueT]):
+class PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation(EvictionTrait[Tuple[Packet, PacketValueT]]):
     """
-    Random eviction without recirculation.
+    Upon seeing a hash collection, we prefer to store the new packet and discard the old packet with probability.
     """
+    probability = 0.5
 
-    def evict(self, new_value: PacketValueT, *args):
+    def evict(self, values: Tuple[Packet, PacketValueT], *args):
+        self.logger.info("Evicting %s -> %s @ %s",
+                         values[0].src, values[0].dst, values[0].index)
         self.tracker: PacketTracker
-        entry = random.choice(list(self.tracker.keys()))
-        evicted_item = self.tracker[entry]
-        self.logger.info("Evicting %s -> %s @ %s", evicted_item.src,
-                         evicted_item.dst, evicted_item.index)
-        self.tracker[entry] = new_value
+        (old_packet, new_value) = values
+        assert old_packet in self.tracker
+        if random.uniform(0,1) < self.probability:
+            self.tracker[old_packet] = new_value
 
 
-class RandomEvictorWithRecirc(EvictionTrait[PacketValueT]):
+class PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation(EvictionTrait[Tuple[Packet, PacketValueT]]):
     """
-    Random eviction with recirculation.
+    Upon seeing a hash collection, we follow what Dart proposes and recirculate the old packet.
+    However, if the old packet is valid and it comes back, we prefer new packet over it with probability.
     """
 
-    def evict(self, new_value: PacketValueT, *args):
+    probability = 1
+
+    def evict(self, values: Tuple[Packet, PacketValueT], *args):
+        self.logger.info("Evicting %s -> %s @ %s",
+                         values[0].src, values[0].dst, values[0].index)
         self.tracker: PacketTracker
-        entry = random.choice(list(self.tracker.keys()))
-        evicted_item = self.tracker[entry]
-        self.logger.info("Evicting %s -> %s @ %s", evicted_item.src,
-                         evicted_item.dst, evicted_item.index)
-        self.tracker[entry] = new_value
-        if evicted_item.recirc_quota == 0:
+        (old_packet, new_value) = values
+        assert old_packet in self.tracker
+        old_packet_item = self.tracker[old_packet]
+        packet_in_table_timestamp = old_packet_item.timestamp
+        incoming_packet_timestamp = new_value.timestamp
+        if incoming_packet_timestamp < packet_in_table_timestamp:
+            # Already after recirculation
+            if random.uniform(0,1) < 1-self.probability:
+                self.tracker[old_packet] = new_value
             return
-        self.tracker.range_tracker_ref.update(
-            evicted_item, recirc=evicted_item.recirc_quota - 1)
+        else:
+            # Recirculation
+            # recirc_quota is implemented more as a safeguard mechanism in Dart
+            if old_packet_item.recirc_quota == 0:
+                if random.uniform(0,1) < 1-self.probability:
+                    self.tracker[old_packet] = new_value
+                return
+            self.tracker[old_packet] = new_value
+            self.tracker.range_tracker_ref.update(
+                old_packet, recirc=old_packet_item.recirc_quota - 1)
+
+
+# class RandomEvictor(EvictionTrait[PacketValueT]):
+#     """
+#     Random eviction without recirculation.
+#     """
+
+#     def evict(self, new_value: PacketValueT, *args):
+#         self.tracker: PacketTracker
+#         entry = random.choice(list(self.tracker.keys()))
+#         evicted_item = self.tracker[entry]
+#         self.logger.info("Evicting %s -> %s @ %s", evicted_item.src,
+#                          evicted_item.dst, evicted_item.index)
+#         self.tracker[entry] = new_value
+
+
+# class RandomEvictorWithRecirc(EvictionTrait[PacketValueT]):
+#     """
+#     Random eviction with recirculation.
+#     """
+
+#     def evict(self, new_value: PacketValueT, *args):
+#         self.tracker: PacketTracker
+#         entry = random.choice(list(self.tracker.keys()))
+#         evicted_item = self.tracker[entry]
+#         self.logger.info("Evicting %s -> %s @ %s", evicted_item.src,
+#                          evicted_item.dst, evicted_item.index)
+#         self.tracker[entry] = new_value
+#         if evicted_item.recirc_quota == 0:
+#             return
+#         self.tracker.range_tracker_ref.update(
+#             evicted_item, recirc=evicted_item.recirc_quota - 1)
 
 
 class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):

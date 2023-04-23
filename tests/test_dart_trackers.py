@@ -4,7 +4,7 @@ from decimal import Decimal
 import redart
 from redart.data import Packet, PacketType
 from redart.data.parser import parse_pcap
-from redart.simulator.dart_sim import (DartSimulator, PacketTrackerEviction,
+from redart.simulator.dart_sim import (DartSimulator, PacketTrackerEviction, PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation, PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation,
                                        RangeTracker)
 
 INF = 66145576821500209494471478855081
@@ -91,7 +91,7 @@ def test_limited_memory(file: str, trace: list[Packet] = None, cache_file: str =
     if trace is None:
         trace = parse_pcap(file, cache_file)
     range_tracker = RangeTracker(
-        5, PacketTrackerEviction, INF, None
+        5, PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation, INF, None
     )
     sim = DartSimulator(range_tracker)
     sim.run_trace(trace)
