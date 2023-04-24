@@ -56,11 +56,15 @@ for pkt in dart[0]:
     else:
         dart_values[(pkt[2], pkt[3], pkt[0], pkt[1])] = pkt[4]
 
-all_entries = lambda d: functools.reduce(lambda x, y: x + y, d, [])
+
+def all_entries(d): return functools.reduce(lambda x, y: x + y, d, [])
+
+
 dart_entries = all_entries(dart_values.values())
 truth_entries = all_entries(truth_values.values())
 
 cmap = plt.colormaps["Set1"]
+
 
 def plot_horizontal_bar(ax):
     ls = [len(dart_entries), len(truth_entries)]
@@ -74,14 +78,17 @@ def plot_horizontal_bar(ax):
     ax.set_xlabel("Number of RTT samples")
     ax.set_title(dataset)
 
+
 def plot_hist(ax, key):
     mx = float(max(max(truth_values[key]), max(dart_values[key])))
     bins = np.linspace(0, 20000, 40)
-    ax.hist(truth_values[key], bins, alpha=0.6, label="TCPtrace", color=cmap(0))
+    ax.hist(truth_values[key], bins, alpha=0.6,
+            label="TCPtrace", color=cmap(0))
     ax.hist(dart_values[key], bins, alpha=0.6, label="ReDart", color=cmap(1))
     ax.legend(loc='upper right')
     ax.set_xlabel("RTT(us)")
     ax.set_title(dataset)
+
 
 def plot_cdf(ax, ub=("y", 1.0)):
 
@@ -101,7 +108,6 @@ def plot_cdf(ax, ub=("y", 1.0)):
     ax.set_xlabel("RTT(us)")
     ax.set_ylabel("CDF")
     ax.set_title(dataset)
-
 
 
 hist, axs = plt.subplots(1, 2)
