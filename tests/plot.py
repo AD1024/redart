@@ -97,8 +97,10 @@ def plot_cdf(ax, ub=("y", 1.0)):
         csum = np.cumsum(c)
         csum = csum / csum[-1]
         idx = (csum if ub[0] == "y" else x).searchsorted(ub[1])
+        # idx2 = x.searchsorted(1000)
+        idx2 = 0
         print("ub", ub, "x[idx]", x[idx-1], "y[idx]", csum[idx-1])
-        return x[:idx], csum[:idx]
+        return x[idx2:idx], csum[idx2:idx]
 
     x_dart, y_dart = get_cdf(dart_entries)
     ax.plot(x_dart, y_dart, label="ReDart", color=cmap(0))
