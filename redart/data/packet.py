@@ -1,8 +1,7 @@
+import datetime
 import hashlib
 from enum import IntEnum
 from functools import lru_cache
-
-from redart.config import TimestampScale, get_config
 
 
 class PacketType(IntEnum):
@@ -25,7 +24,7 @@ class Packet:
         payload (str): The payload of the packet.
     """
 
-    def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: float, packet_size: int, packet_type: PacketType, *, payload=None, index=None):
+    def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: datetime.datetime, packet_size: int, packet_type: PacketType, *, payload=None, index=None):
         self.src = src
         self.srcport = srcport
         self.dst = dst
@@ -33,7 +32,7 @@ class Packet:
         self.ack = ack
         self.seq = seq
         self.payload = payload
-        self._timestamp = float(timestamp)
+        self._timestamp = timestamp
         self.packet_size = packet_size
         self.packet_type = packet_type
         self.index = index
@@ -65,14 +64,15 @@ class Packet:
         return self.packet_type
 
     @property
-    def timestamp(self):
-        cfg = get_config()
-        if cfg.timescale == TimestampScale.SECOND:
-            return self._timestamp
-        elif cfg.timescale == TimestampScale.MILLISECOND:
-            return self._timestamp * 1e3
-        elif cfg.timescale == TimestampScale.MICROSECOND:
-            return self._timestamp * 1e6
+    def timestamp(self) -> datetime.datetime:
+        # cfg = get_config()
+        # if cfg.timescale == TimestampScale.SECOND:
+        #     return self._timestamp
+        # if cfg.timescale == TimestampScale.MILLISECOND:
+        #     return self._timestamp * 1e3
+        # if cfg.timescale == TimestampScale.MICROSECOND:
+        #     return self._timestamp * 1e6
+        return self._timestamp
 
     @lru_cache
     def to_src_dst_key(self):

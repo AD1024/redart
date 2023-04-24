@@ -1,4 +1,5 @@
 """DART simulator re-implementation with better interfaces"""
+import datetime
 import enum
 import random
 import typing
@@ -6,7 +7,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Tuple, Union
 
-from redart.config import get_config
+from redart.config import TimestampScale, get_config
 from redart.data import Packet, PacketType
 from redart.simulator import EvictionTrait, SimulatorTrait, TrackerTrait
 from redart.simulator.exceptions import EntryNotFountException
@@ -16,7 +17,7 @@ from redart.simulator.exceptions import EntryNotFountException
 PacketKeyT = int
 SeqT = int
 AckT = int
-TimestampT = Decimal
+TimestampT = datetime.datetime
 # number of recirculation loops allowed
 # if set to 0, it corresponds to directly
 # evicting the old entry with out any recirculation
@@ -339,6 +340,7 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
         self.range_tracker_ref = range_tracker
         self.peers: set[int] = set()
         self.peers_record: dict[int, Tuple[str, int, str, int]] = {}
+        self.time_scale = get_config().timescale
         # (src <-> dst) -> (rtt samples)
         self.rtt_samples: dict[int, list[Decimal]] = {}
         # (src, dst, srcport, dstport) -> (src <-> dst)
@@ -369,7 +371,14 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                     self.flow_map[tcp_tuple] = record_key
                 if record_key not in self.rtt_samples:
                     self.rtt_samples[record_key] = []
-                self.rtt_samples[record_key].append(rtt)
+                if self.time_scale == TimestampScale.SECOND:
+                    self.rtt_samples[record_key].append(rtt.total_seconds())
+                elif self.time_scale == TimestampScale.MILLISECOND:
+                    self.rtt_samples[record_key].append(
+                        rtt / datetime.timedelta(milliseconds=1))
+                elif self.time_scale == TimestampScale.MICROSECOND:
+                    self.rtt_samples[record_key].append(
+                        rtt / datetime.timedelta(microseconds=1))
 
     def update(self, packet: Packet, packet_value: PacketValueT):
         self.logger.info("Update SEQ packet: %s -> %s @ %s",

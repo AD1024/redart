@@ -12,7 +12,7 @@ from redart.simulator import dart_sim
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="test")
-parser.add_argument("--tracker-size", type=int, default=1001)
+parser.add_argument("--tracker-size", type=int, default=10001)
 parser.add_argument("--policy", type=str, default="dart")
 
 eviction_policies = {
