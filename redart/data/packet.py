@@ -68,13 +68,6 @@ class Packet:
 
     @property
     def timestamp(self) -> datetime.datetime:
-        # cfg = get_config()
-        # if cfg.timescale == TimestampScale.SECOND:
-        #     return self._timestamp
-        # if cfg.timescale == TimestampScale.MILLISECOND:
-        #     return self._timestamp * 1e3
-        # if cfg.timescale == TimestampScale.MICROSECOND:
-        #     return self._timestamp * 1e6
         return self._timestamp
 
     def time_since(self, other) -> float:
