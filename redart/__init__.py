@@ -7,6 +7,8 @@ def init(timescale: config.TimestampScale = config.TimestampScale.MILLISECOND,
     import os
     if logging_level is None and "REDART_LOG_LEVEL" in os.environ:
         logging_level = os.environ["REDART_LOG_LEVEL"]
+    if config._redart_config is not None:
+        raise RuntimeError("Redart has already been initialized.")
     config._redart_config = config.RedartConfig(
         timescale, ignore_syn, logging_level)
 

@@ -13,9 +13,14 @@ from redart.simulator import dart_sim, tcp_trace_sim
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="test")
 parser.add_argument("--outgoing-only", action="store_true", default=False)
-parser.add_argument("--tracker-size", type=int, default=10001)
+parser.add_argument("--packet-tracker-size", type=int, default=5001)
 parser.add_argument("--total-size", type=int, default=10002)
-parser.add_argument("--policy", type=str, default="dart")
+parser.add_argument("--in-flight-threshold", type=int, default=3)
+parser.add_argument("--rt-eviction-prob", type=float, default=0.5)
+parser.add_argument("--pt-policy", type=str, default="dart")
+parser.add_argument("--rt-policy", type=str, default="keep-new")
+
+args = parser.parse_args()
 
 eviction_policies = {
     "dart": dart_sim.PacketTrackerEviction,
@@ -23,12 +28,17 @@ eviction_policies = {
     "prob_recirc": dart_sim.PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation,
 }
 
-args = parser.parse_args()
+rt_eviction_policies = {
+    "keep-new": dart_sim.MkRTProbabilisticEviction(0.0),
+    "keep-old": dart_sim.MkRTProbabilisticEviction(1.0),
+    "prob": dart_sim.MkRTProbabilisticEviction(args.rt_eviction_prob),
+    "refined": dart_sim.MkRTRefinedEviction(args.in_flight_threshold),
+}
 
 dataset = args.dataset
 f = "../data/{}.pcap".format(dataset)
 
-redart.init(redart.config.TimestampScale.MICROSECOND, ignore_syn=True)
+redart.init(redart.config.TimestampScale.MILLISECOND, ignore_syn=True)
 
 print("===================== TRUTH =====================")
 truth = run_ground_truth.main(
@@ -49,7 +59,11 @@ for pkt in truth[0]:
 
 print("===================== DART =====================")
 dart = test_dart_trackers.test_flow(
-    f, truth[2], pt_capacity=args.tracker_size, policy=eviction_policies[args.policy], total_capacity=args.total_size)
+    f, truth[2], pt_capacity=args.packet_tracker_size,
+    pt_policy=eviction_policies[args.pt_policy],
+    outgoing_only=args.outgoing_only,
+    rt_policy=rt_eviction_policies[args.rt_policy],
+    total_capacity=args.total_size)
 dart_values = {}
 
 # print(dart[0])
@@ -124,19 +138,19 @@ plot_hist(axs[0], max(lens, key=lens.get))
 lens.pop(max(lens, key=lens.get))
 lens.pop(max(lens, key=lens.get))
 plot_hist(axs[1], max(lens, key=lens.get))
-hist.savefig("figures/{}_{}_{}_hist.png".format(dataset,
-             args.policy, args.tracker_size), dpi=300)
+hist.savefig("figures/{}_{}_{}_{}_hist.png".format(dataset,
+             args.pt_policy, args.rt_policy, args.packet_tracker_size), dpi=300)
 
 
 bar, axs = plt.subplots(1, 1)
 plot_horizontal_bar(axs)
-bar.savefig("figures/{}_{}_{}_bar.png".format(dataset,
-            args.policy, args.tracker_size), dpi=300)
+bar.savefig("figures/{}_{}_{}_{}_bar.png".format(dataset,
+            args.pt_policy, args.rt_policy, args.packet_tracker_size), dpi=300)
 
 
 cdf, axs = plt.subplots(1, 1)
 # ub = ("y", 1.0)
 ub = ("x", 120000)
 plot_cdf(axs, ub)
-cdf.savefig("figures/{}_{}_{}_cdf.png".format(dataset,
-            args.policy, args.tracker_size), dpi=300)
+cdf.savefig("figures/{}_{}_{}_{}_cdf.png".format(dataset,
+            args.pt_policy, args.rt_policy, args.packet_tracker_size), dpi=300)

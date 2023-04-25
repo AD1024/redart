@@ -3,16 +3,13 @@ from redart.data.parser import parse_pcap
 from redart.logger import get_logger
 from redart.simulator import NaiveSimulator
 
-redart.init(redart.config.TimestampScale.MICROSECOND)
-
-logging = get_logger("RunNaiveSim")
-
 
 def main(file: str, trace=None, cache_file: str = None, outgoing_only=False, constr=NaiveSimulator):
+    logging = get_logger("RunNaiveSim")
     logging.info("Running ground truth simulator on %s", file)
-    simulator = constr()
+    simulator = constr(outgoing_only=outgoing_only)
     if trace is None:
-        trace = parse_pcap(file, cache_file, outgoing_only)
+        trace = parse_pcap(file, cache_file)
     simulator.run_trace(trace)
 
     vis = set()
@@ -35,4 +32,5 @@ if __name__ == "__main__":
     parser.add_argument("cache_file", type=str,
                         help="The path to the cache file")
     args = parser.parse_args()
+    redart.init(redart.config.TimestampScale.MICROSECOND)
     main(args.file, cache_file=args.cache_file)

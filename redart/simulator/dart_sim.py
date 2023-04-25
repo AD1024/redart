@@ -5,9 +5,9 @@ import random
 import typing
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Tuple, Union
+from typing import Callable, Tuple, Union
 
-from redart.config import TimestampScale, get_config
+from redart.config import get_config
 from redart.data import Packet, PacketType
 from redart.simulator import EvictionTrait, SimulatorTrait, TrackerTrait
 from redart.simulator.exceptions import EntryNotFountException
@@ -49,6 +49,7 @@ class RangeValueT:
     timestamp: TimestampT
     recirc_quota: RecircQuotaT
     packet_ref: Packet
+    in_flight: int
 
 
 RangeKeyT = int
@@ -143,6 +144,51 @@ class PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation(EvictionTra
         self.tracker[old_packet] = new_value
 
 
+class RangeTrackerEviction(EvictionTrait[Tuple[RangeKeyT, RangeValueT]]):
+    """
+    Eviction policy for Range Tracker.
+    Probability indicates is the chance of keeping the old entry.
+    Setting 1 means always keep the old entry.
+    """
+
+    def __init__(self, tracker: TrackerTrait, *, name=None, probablilty=0.5):
+        self.eviction_prob = probablilty
+        super().__init__(tracker, name=name)
+
+    def evict(self, value: Tuple[RangeKeyT, RangeValueT], *args):
+        self.logger.warning("RT Eviction with prob %s", self.eviction_prob)
+        self.tracker: RangeTracker
+        key, new_value = value
+        assert key in self.tracker
+        if random.uniform(0, 1) > self.eviction_prob:
+            self.tracker.pop(key)
+            self.tracker[key] = new_value
+
+
+class RangeTrackerEvictionRefined(EvictionTrait[Tuple[RangeKeyT, RangeValueT]]):
+
+    def __init__(self, tracker: TrackerTrait, *, name=None, in_flight_threshold=3):
+        self.in_flight_threshold = in_flight_threshold
+        super().__init__(tracker, name=name)
+
+    def evict(self, value: Tuple[RangeKeyT, RangeValueT], *args):
+        key, new_value = value
+        self.tracker: RangeTracker
+        assert key in self.tracker
+        range_entry = self.tracker[key]
+        if range_entry.in_flight < self.in_flight_threshold:
+            self.tracker.pop(key)
+            self.tracker[key] = new_value
+
+
+def MkRTProbabilisticEviction(probability: float) -> Callable[[TrackerTrait], RangeTrackerEviction]:
+    return lambda x: RangeTrackerEviction(x, probablilty=probability)
+
+
+def MkRTRefinedEviction(in_flight_threshold: int) -> Callable[[TrackerTrait], RangeTrackerEvictionRefined]:
+    return lambda x: RangeTrackerEvictionRefined(x, in_flight_threshold=in_flight_threshold)
+
+
 class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
     """
     The range tracker tracks the range of SEQ/ACK that
@@ -151,14 +197,21 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
     The `update` function is invoked when a flow enters RangeTracker.
     """
 
-    def __init__(self, packet_tracker_capacity: int, packet_tracker_eviction: object, total_capacity: int, eviction_policy: object, *, name="DartRangeTracker", recirc=3):
+    def __init__(self, packet_tracker_capacity: int, pt_eviction: object, total_capacity: int, rt_eviction: object, *, name="DartRangeTracker", recirc=3):
         self.ignore_syn = get_config().ignore_syn
         assert packet_tracker_capacity < total_capacity
         self.capacity = total_capacity - packet_tracker_capacity
         self.packet_tracker_ref = PacketTracker(
-            self, packet_tracker_capacity, packet_tracker_eviction, name="DartPacketTracker")
+            self, packet_tracker_capacity, pt_eviction, name="DartPacketTracker")
         self.recirc = recirc
-        super().__init__(eviction_policy, name=name)
+        super().__init__(rt_eviction, name=name)
+
+    def evict(self, key: RangeKeyT, new_value: RangeValueT):
+        if self.eviction_policy is None:
+            super().__setitem__(key, new_value)
+        else:
+            self.eviction_policy: EvictionTrait[Tuple[RangeKeyT, RangeValueT]]
+            self.eviction_policy.evict((key, new_value))
 
     def validate(self, packet_key: RangeKeyT, packet: Packet, recirc=False) -> RangeTrackerValidateAction:
         if packet.is_syn() and self.ignore_syn:
@@ -227,7 +280,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
             range_item = self.get(rt_packet_key)
             range_item.tracking_range = MeasureRange(
                 range_item.tracking_range.highest_eack, range_item.tracking_range.highest_eack)
-            self[rt_packet_key] = range_item
+            super().__setitem__(rt_packet_key, range_item)
 
         if action == RangeTrackerValidateAction.VALID:
             if packet in self:
@@ -242,11 +295,13 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                         if packet.seq == range_item.tracking_range.highest_eack:
                             range_item.tracking_range = MeasureRange(
                                 range_item.tracking_range.highest_ack, eack)
+                            range_item.in_flight += 1
                         else:
                             # exceeding current measurement range i.e. the "hole" case
                             range_item.tracking_range = MeasureRange(
                                 packet.seq, eack
                             )
+                            range_item.in_flight = 1
                         if range_item.tracking_range.highest_ack == range_item.tracking_range.highest_eack:
                             self.logger.warning(
                                 "Delete collapsed range due to SEQ @ %s", packet.index)
@@ -275,8 +330,8 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                             "Update range %s by ACK %s", range_item.tracking_range, packet.ack)
                         range_item.tracking_range = MeasureRange(packet.ack,  # highest_ack
                                                                  range_item.tracking_range.highest_eack)
-
-                        self[rt_packet_key] = range_item
+                        range_item.in_flight -= 1
+                        super().__setitem__(rt_packet_key, range_item)
                     self.packet_tracker_ref.match(packet)
             else:
                 assert len(self) <= self.capacity, "Range tracker is full"
@@ -298,7 +353,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                     ),
                     MeasureRange(packet.seq, eack),
                     packet.seq, eack, packet.timestamp, self.recirc if recirc is None else recirc,
-                    packet,
+                    packet, in_flight=1
                 )
                 self[rt_packet_key] = packet_value
                 self.packet_tracker_ref.update(
@@ -310,6 +365,8 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         return super().get(packet % self.capacity)
 
     def __setitem__(self, __key: RangeKeyT, __value: RangeValueT):
+        if (__key % self.capacity) in self:
+            self.evict(__key % self.capacity, __value)
         super().__setitem__(__key % self.capacity, __value)
 
     def __getitem__(self, __key: Union[RangeKeyT, Packet]) -> RangeValueT:
@@ -406,8 +463,9 @@ class DartSimulator(SimulatorTrait):
     The DART simulator.
     """
 
-    def __init__(self, range_tracker: RangeTracker, *, name="DartSim"):
+    def __init__(self, range_tracker: RangeTracker, *, name="DartSim", outgoing_only=False):
         self.range_tracker = range_tracker
+        self.outgoing_only = outgoing_only
         super().__init__(self.range_tracker, self.range_tracker.packet_tracker_ref, name=name)
 
     def run_trace(self, trace: list[Packet]):
@@ -415,6 +473,8 @@ class DartSimulator(SimulatorTrait):
         return super().run_trace(trace)
 
     def process_packet(self, packet: Packet):
+        if self.outgoing_only and not packet.src.startswith("10.") and packet.is_seq():
+            return
         self.range_tracker.update(packet)
 
     def peer_ids(self) -> list[int]:

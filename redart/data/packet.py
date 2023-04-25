@@ -38,7 +38,6 @@ class Packet:
         self.packet_size = packet_size
         self.packet_type = packet_type
         self.index = index
-        self._time_scale = get_config().timescale
 
     def __str__(self):
         return f"Packet(src={self.src}, srcport={self.srcport}, dst={self.dst}, dstport={self.dstport}, ack={self.ack}, seq={self.seq}, size={self.size}, ts={self.timestamp})"
@@ -70,16 +69,21 @@ class Packet:
     def timestamp(self) -> datetime.datetime:
         return self._timestamp
 
+    @lru_cache
+    def _current_time_scale(self):
+        return get_config().timescale
+
     def time_since(self, other) -> float:
         assert isinstance(other, Packet)
         diff = self.timestamp - other.timestamp
-        if self._time_scale == TimestampScale.SECOND:
+        time_scale = self._current_time_scale()
+        if time_scale == TimestampScale.SECOND:
             return diff.total_seconds()
-        if self._time_scale == TimestampScale.MILLISECOND:
+        if time_scale == TimestampScale.MILLISECOND:
             return diff / datetime.timedelta(milliseconds=1)
-        if self._time_scale == TimestampScale.MICROSECOND:
+        if time_scale == TimestampScale.MICROSECOND:
             return diff / datetime.timedelta(microseconds=1)
-        raise ValueError(f"Unknown timescale {self._time_scale}")
+        raise ValueError(f"Unknown timescale {time_scale}")
 
     @lru_cache
     def to_src_dst_key(self):
@@ -88,7 +92,7 @@ class Packet:
         """
         src_hash = int(hashlib.sha256(self.src.encode()).hexdigest(), 16)
         dst_hash = int(hashlib.sha256(self.dst.encode()).hexdigest(), 16)
-        return src_hash ^ dst_hash ^ self.srcport ^ self.dstport
+        return (src_hash ^ dst_hash ^ self.srcport ^ self.dstport) % 556580197052749600253904711163
 
     def to_dict(self):
         return {

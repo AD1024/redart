@@ -6,16 +6,19 @@ from redart.simulator.traits import SimulatorTrait
 
 
 class NaiveSimulator(SimulatorTrait):
-    def __init__(self):
+    def __init__(self, outgoing_only=False):
         super().__init__(None, {}, name="NaiveSimulator")
         self.record = {}
         self.rtt_samples = {}
         self.time_scale = get_config().timescale
+        self.outgoing_only = outgoing_only
         self.seen = set()
 
     # A reference rather than ground truth
     # When retransmission, we pessimistically take with the first SEQ packet
     def process_packet(self, packet: Packet):
+        if self.outgoing_only and not packet.src.startswith("10.") and packet.is_seq():
+            return
         key = packet.to_src_dst_key()
         if packet.is_fin():
             # flow finished, clear the peer from record

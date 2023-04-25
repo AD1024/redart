@@ -3,9 +3,10 @@ from redart.simulator import SimulatorTrait
 
 
 class TCPTraceSim(SimulatorTrait):
-    def __init__(self, *, name=None):
+    def __init__(self, *, name=None, outgoing_only=False):
         self.flow_key_to_names = {}
         self.rtt_samples = {}
+        self.outgoing_only = outgoing_only
         super().__init__({}, {}, name=name)
 
     def insert_pt(self, packet: Packet, eack: int):
@@ -65,6 +66,8 @@ class TCPTraceSim(SimulatorTrait):
             self.warning("Flow not found in packet tracker", packet)
 
     def process_packet(self, packet: Packet):
+        if self.outgoing_only and not packet.src.startswith("10.") and packet.is_seq():
+            return
         if packet.is_fin() or packet.is_syn():
             return
         if packet.is_seq():

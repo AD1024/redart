@@ -24,7 +24,7 @@ def build_packet_type(tcp_info):
 
 
 @lru_cache(typed=True)
-def parse_pcap(file: str, cache_file=None, outgoing_only=False) -> list[Packet]:
+def parse_pcap(file: str, cache_file=None) -> list[Packet]:
     """Parse a PCAP file and return a list of packets.
 
     Args:
@@ -69,8 +69,6 @@ def parse_pcap(file: str, cache_file=None, outgoing_only=False) -> list[Packet]:
                 build_packet_type(frame.tcp),
                 index=i
             )
-            if outgoing_only and not packet.src.startswith("10.") and packet.is_seq():
-                continue
             extracted_trace.append(packet)
         except KeyError:
             logging.warning('Packet %s is not an IP packet',
