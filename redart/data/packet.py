@@ -3,6 +3,8 @@ import hashlib
 from enum import IntEnum
 from functools import lru_cache
 
+from redart.config import TimestampScale, get_config
+
 
 class PacketType(IntEnum):
     ACK = 1
@@ -36,6 +38,7 @@ class Packet:
         self.packet_size = packet_size
         self.packet_type = packet_type
         self.index = index
+        self._time_scale = get_config().timescale
 
     def __str__(self):
         return f"Packet(src={self.src}, srcport={self.srcport}, dst={self.dst}, dstport={self.dstport}, ack={self.ack}, seq={self.seq}, size={self.size}, ts={self.timestamp})"
@@ -73,6 +76,17 @@ class Packet:
         # if cfg.timescale == TimestampScale.MICROSECOND:
         #     return self._timestamp * 1e6
         return self._timestamp
+
+    def time_since(self, other) -> float:
+        assert isinstance(other, Packet)
+        diff = self.timestamp - other.timestamp
+        if self._time_scale == TimestampScale.SECOND:
+            return diff.total_seconds()
+        if self._time_scale == TimestampScale.MILLISECOND:
+            return diff / datetime.timedelta(milliseconds=1)
+        if self._time_scale == TimestampScale.MICROSECOND:
+            return diff / datetime.timedelta(microseconds=1)
+        raise ValueError(f"Unknown timescale {self._time_scale}")
 
     @lru_cache
     def to_src_dst_key(self):

@@ -19,10 +19,10 @@ class NaiveSimulator(SimulatorTrait):
         key = packet.to_src_dst_key()
         if packet.is_fin():
             # flow finished, clear the peer from record
-            self.record = dict(
-                filter(lambda x: x[0][0] != key, self.record.items()))
-            self.seen = set(filter(lambda x: not isinstance(
-                x, tuple) or x[0] != key, self.seen))
+            # self.record = dict(
+            #     filter(lambda x: x[0][0] != key, self.record.items()))
+            # self.seen = set(filter(lambda x: not isinstance(
+            #     x, tuple) or x[0] != key, self.seen))
             return
         if packet.is_syn():
             return
@@ -32,10 +32,6 @@ class NaiveSimulator(SimulatorTrait):
                 self.record[key, eack] = packet
                 self.seen.add((key, eack))
         elif packet.is_ack():
-            if packet.ack not in self.seen:
-                self.seen.add(packet.ack)
-            else:
-                return
             if (key, packet.ack) in self.record:
                 if key not in self.rtt_samples:
                     self.rtt_samples[key] = []

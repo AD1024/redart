@@ -8,7 +8,7 @@ import run_ground_truth
 import test_dart_trackers
 
 import redart
-from redart.simulator import dart_sim
+from redart.simulator import dart_sim, tcp_trace_sim
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="test")
@@ -29,7 +29,8 @@ f = "../data/{}.pcap".format(dataset)
 redart.init(redart.config.TimestampScale.MICROSECOND, ignore_syn=True)
 
 print("===================== TRUTH =====================")
-truth = run_ground_truth.main(f, cache_file=f+".cache")
+truth = run_ground_truth.main(
+    f, cache_file=f+".cache", constr=tcp_trace_sim.TCPTraceSim)
 truth_values = {}
 
 for pkt in truth[0]:
