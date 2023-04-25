@@ -151,9 +151,10 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
     The `update` function is invoked when a flow enters RangeTracker.
     """
 
-    def __init__(self, packet_tracker_capacity: int, packet_tracker_eviction: object, capacity: int, eviction_policy: object, *, name="DartRangeTracker", recirc=3):
+    def __init__(self, packet_tracker_capacity: int, packet_tracker_eviction: object, total_capacity: int, eviction_policy: object, *, name="DartRangeTracker", recirc=3):
         self.ignore_syn = get_config().ignore_syn
-        self.capacity = capacity
+        assert packet_tracker_capacity < total_capacity
+        self.capacity = total_capacity - packet_tracker_capacity
         self.packet_tracker_ref = PacketTracker(
             self, packet_tracker_capacity, packet_tracker_eviction, name="DartPacketTracker")
         self.recirc = recirc

@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="test")
 parser.add_argument("--outgoing-only", action="store_true", default=False)
 parser.add_argument("--tracker-size", type=int, default=10001)
+parser.add_argument("--total-size", type=int, default=10002)
 parser.add_argument("--policy", type=str, default="dart")
 
 eviction_policies = {
@@ -48,7 +49,7 @@ for pkt in truth[0]:
 
 print("===================== DART =====================")
 dart = test_dart_trackers.test_flow(
-    f, truth[2], capacity=args.tracker_size, policy=eviction_policies[args.policy])
+    f, truth[2], pt_capacity=args.tracker_size, policy=eviction_policies[args.policy], total_capacity=args.total_size)
 dart_values = {}
 
 # print(dart[0])

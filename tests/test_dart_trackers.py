@@ -65,11 +65,11 @@ def test_flow_insertion_inf_space():
               (peer_name[0], peer_name[1], sim.peer_rtt_samples(pid)))
 
 
-def test_flow(file: str, trace=None, capacity: int = INF, policy: PacketTrackerEviction = PacketTrackerEviction):
+def test_flow(file: str, trace=None, pt_capacity: int = INF//2, policy: PacketTrackerEviction = PacketTrackerEviction, total_capacity: int = INF):
     if trace is None:
         trace = parse_pcap(file)
     range_tracker = RangeTracker(
-        capacity, policy, INF, None
+        pt_capacity, policy, total_capacity, None
     )
     sim = DartSimulator(range_tracker)
     sim.run_trace(trace)
