@@ -379,12 +379,9 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                 elif self.time_scale == TimestampScale.MICROSECOND:
                     self.rtt_samples[record_key].append(
                         rtt / datetime.timedelta(microseconds=1))
-                # if self.rtt_samples[record_key][-1] < 1000:
-                #     self.rtt_samples[record_key].pop()
-                    # print(packet, packet.index)
-                    # print(packet_item.packet_ref, packet_item.packet_ref.index)
-                    # print(packet.src, packet.dst)
-                    # print(packet.timestamp - packet_item.timestamp)
+                if self.rtt_samples[record_key][-1] < 1000:
+                    # ignore "short legs" (i.e. RTT measured between the host and Wireshark)
+                    self.rtt_samples[record_key].pop()
 
     def update(self, packet: Packet, packet_value: PacketValueT):
         self.logger.info("Update SEQ packet: %s -> %s @ %s",
