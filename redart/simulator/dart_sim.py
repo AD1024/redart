@@ -90,8 +90,8 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
     """
 
     def evict(self, values: Tuple[Packet, PacketValueT], *args):
-        self.logger.info("Evicting %s -> %s @ %s",
-                         values[0].src, values[0].dst, values[0].index)
+        self.logger.warning("Evicting %s -> %s @ %s",
+                            values[0].src, values[0].dst, values[0].index)
         self.tracker: PacketTracker
         (old_packet, new_value) = values
         assert old_packet in self.tracker
@@ -179,13 +179,13 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         self.recirc = recirc
         super().__init__(eviction_policy, name=name)
 
-    def validate(self, packet_key: RangeKeyT, packet: Packet) -> RangeTrackerValidateAction:
+    def validate(self, packet_key: RangeKeyT, packet: Packet, recirc=False) -> RangeTrackerValidateAction:
         if packet.is_syn() and self.ignore_syn:
             self.logger.warning("Ignoring SYN packet @ %s", packet.index)
             return RangeTrackerValidateAction.IGNORE
         if packet.is_fin():
-            self.logger.warning("Flow finished for %s -> %s @ %s",
-                                packet.src, packet.dst, packet.index)
+            self.logger.warning("Flow finished for %s:%s -> %s:%s @ %s",
+                                packet.src, packet.srcport, packet.dst, packet.dstport, packet.index)
             return RangeTrackerValidateAction.IGNORE
         if packet_key in self:
             entry = self[packet_key].tracking_range
@@ -193,7 +193,8 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                 if entry.highest_eack <= packet.seq:
                     return RangeTrackerValidateAction.VALID
                 self.logger.warning(
-                    "Ignore SEQ (retransmission) %s -> %s @ %s", packet.src, packet.dst, packet.index)
+                    "Ignore SEQ (retransmission) %s:%s -> %s:%s @ %s", packet.src, packet.srcport,
+                    packet.dst, packet.dstport, packet.index)
                 return RangeTrackerValidateAction.RESET
             if packet.is_ack():
                 if entry.highest_ack < packet.ack <= entry.highest_eack:
@@ -201,13 +202,17 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                 if entry.highest_ack == packet.ack:
                     # Reset Case: ACK coming for the left edge
                     self.logger.warning(
-                        "Resetting range due to ACK @ %s", packet.index)
-                    return RangeTrackerValidateAction.RESET
+                        "Dropping range due to ACK @ %s", packet.index)
+                    self.pop(packet_key)
+                    return RangeTrackerValidateAction.IGNORE
                 if packet.ack <= entry.highest_ack or packet.ack > entry.highest_eack:
                     self.logger.warning(
-                        "Ignoring ACK due to duplicate ACK: %s -> %s @ %s", packet.src, packet.dst, packet.index)
+                        "Ignoring ACK due to duplicate ACK: %s:%s -> %s:%s @ %s", packet.src, packet.srcport,
+                        packet.dst, packet.dstport, packet.index)
                     return RangeTrackerValidateAction.IGNORE
             self.logger.warning("SYN not supported for now")
+            return RangeTrackerValidateAction.IGNORE
+        if recirc:
             return RangeTrackerValidateAction.IGNORE
         if packet.is_seq():  # A new flow seen
             return RangeTrackerValidateAction.VALID
@@ -227,9 +232,12 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
             self.logger.info(
                 "Recirculating packet: %s -> %s @ %s", packet.src, packet.dst, packet.index)
         rt_packet_key = packet.to_src_dst_key() % self.capacity
-        action = self.validate(rt_packet_key, packet)
+        action = self.validate(rt_packet_key, packet,
+                               recirc=recirc is not None)
         if action == RangeTrackerValidateAction.IGNORE:
-            if packet.is_seq() or packet.is_fin() or packet.is_syn():
+            if packet.is_syn():
+                return
+            if packet.is_seq() or packet.is_fin():
                 self.pop(rt_packet_key, None)
             return
         if action == RangeTrackerValidateAction.RESET:
@@ -258,6 +266,11 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                             range_item.tracking_range = MeasureRange(
                                 packet.seq, eack
                             )
+                        if range_item.tracking_range.highest_ack == range_item.tracking_range.highest_eack:
+                            self.logger.warning(
+                                "Delete collapsed range due to SEQ @ %s", packet.index)
+                            self.pop(rt_packet_key)
+                            return
                         range_item.packet_ref = packet
                         range_item.timestamp = packet.timestamp
                         self.packet_tracker_ref.update(packet, range_item)
@@ -286,6 +299,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                     self.packet_tracker_ref.match(packet)
             else:
                 assert len(self) <= self.capacity, "Range tracker is full"
+                assert packet.is_seq()
                 # flow not in range tracker, check packet tracker
                 # if exists, then this is a retransmission and we can drop
                 # the entry in the packet tracker
@@ -379,9 +393,13 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                 elif self.time_scale == TimestampScale.MICROSECOND:
                     self.rtt_samples[record_key].append(
                         rtt / datetime.timedelta(microseconds=1))
-                if self.rtt_samples[record_key][-1] < 1000:
+                upper = 500 if self.time_scale == TimestampScale.MICROSECOND else 0.5 if self.time_scale == TimestampScale.MILLISECOND else 0.0005
+                if self.rtt_samples[record_key][-1] < upper:
                     # ignore "short legs" (i.e. RTT measured between the host and Wireshark)
+                    self.logger.warning(
+                        "Dropping short leg: %s -> %s @ %s", packet.src, packet.dst, packet.index)
                     self.rtt_samples[record_key].pop()
+                    pass
 
     def update(self, packet: Packet, packet_value: PacketValueT):
         self.logger.info("Update SEQ packet: %s -> %s @ %s",

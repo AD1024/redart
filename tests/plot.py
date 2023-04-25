@@ -26,7 +26,7 @@ args = parser.parse_args()
 dataset = args.dataset
 f = "../data/{}.pcap".format(dataset)
 
-redart.init(redart.config.TimestampScale.MICROSECOND)
+redart.init(redart.config.TimestampScale.MICROSECOND, ignore_syn=True)
 
 print("===================== TRUTH =====================")
 truth = run_ground_truth.main(f, cache_file=f+".cache")
@@ -45,7 +45,8 @@ for pkt in truth[0]:
 
 
 print("===================== DART =====================")
-dart = test_dart_trackers.test_flow(f, truth[2])
+dart = test_dart_trackers.test_flow(
+    f, truth[2], capacity=args.tracker_size, policy=eviction_policies[args.policy])
 dart_values = {}
 
 # print(dart[0])
