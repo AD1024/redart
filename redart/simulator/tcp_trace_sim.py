@@ -1,5 +1,5 @@
-from redart.simulator import SimulatorTrait
 from redart.data import Packet
+from redart.simulator import SimulatorTrait
 
 
 class TCPTraceSim(SimulatorTrait):
@@ -32,7 +32,7 @@ class TCPTraceSim(SimulatorTrait):
         else:
             self.range_tracker[flow_key] = (packet.seq, eack)
             self.insert_pt(packet, eack)
-        
+
     def process_ACK(self, packet: Packet):
         assert packet.is_ack()
         flow_key = packet.to_src_dst_key()
@@ -45,7 +45,8 @@ class TCPTraceSim(SimulatorTrait):
             if ack < highest_ack or ack > highest_eack:
                 self.warning("Dropping out-of-range ACK", packet)
             elif ack == highest_ack:
-                self.warning("Retransmission indicated by duplicated ACK", packet)
+                self.warning(
+                    "Retransmission indicated by duplicated ACK", packet)
                 self.range_tracker[flow_key] = (highest_eack, highest_eack)
                 if (flow_key, highest_eack) in self.packet_tracker:
                     self.packet_tracker.pop((flow_key, highest_eack))
@@ -55,10 +56,11 @@ class TCPTraceSim(SimulatorTrait):
                     packet_record = self.packet_tracker.pop((flow_key, ack))
                     if flow_key not in self.flow_key_to_names:
                         self.flow_key_to_names[flow_key] = (packet_record.src, packet_record.srcport,
-                                                             packet_record.dst, packet_record.dstport)
+                                                            packet_record.dst, packet_record.dstport)
                     if flow_key not in self.rtt_samples:
                         self.rtt_samples[flow_key] = []
-                    self.rtt_samples[flow_key].append(packet.time_since(packet_record))
+                    self.rtt_samples[flow_key].append(
+                        packet.time_since(packet_record))
         else:
             self.warning("Flow not found in packet tracker", packet)
 

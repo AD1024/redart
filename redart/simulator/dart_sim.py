@@ -95,22 +95,12 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
         self.tracker: PacketTracker
         (old_packet, new_value) = values
         assert old_packet in self.tracker
-        old_packet_item = self.tracker[old_packet]
-        packet_in_table_timestamp = old_packet_item.timestamp
-        incoming_packet_timestamp = new_value.timestamp
-        if incoming_packet_timestamp < packet_in_table_timestamp:
-            # Already after recirculation
-            self.tracker[old_packet] = new_value
-            return
-        else:
-            # Recirculation
-            # recirc_quota is implemented more as a safeguard mechanism in Dart
-            if old_packet_item.recirc_quota == 0:
-                self.tracker[old_packet] = new_value
+        if old_packet in self.tracker.range_tracker_ref:
+            rt_entry = self.tracker.range_tracker_ref[old_packet]
+            eack = old_packet.seq + old_packet.size
+            if rt_entry.tracking_range.highest_ack < eack <= rt_entry.tracking_range.highest_eack:
                 return
-            self.tracker[old_packet] = new_value
-            self.tracker.range_tracker_ref.update(
-                old_packet, recirc=old_packet_item.recirc_quota - 1)
+        self.tracker[old_packet] = new_value
 
 
 class PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation(EvictionTrait[Tuple[Packet, PacketValueT]]):
@@ -138,29 +128,19 @@ class PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation(EvictionTra
     probability = 1
 
     def evict(self, values: Tuple[Packet, PacketValueT], *args):
-        self.logger.info("Evicting %s -> %s @ %s",
-                         values[0].src, values[0].dst, values[0].index)
+        self.logger.warning("Evicting %s -> %s @ %s",
+                            values[0].src, values[0].dst, values[0].index)
         self.tracker: PacketTracker
         (old_packet, new_value) = values
         assert old_packet in self.tracker
-        old_packet_item = self.tracker[old_packet]
-        packet_in_table_timestamp = old_packet_item.timestamp
-        incoming_packet_timestamp = new_value.timestamp
-        if incoming_packet_timestamp < packet_in_table_timestamp:
-            # Already after recirculation
-            if random.uniform(0, 1) < 1-self.probability:
-                self.tracker[old_packet] = new_value
-            return
-        else:
-            # Recirculation
-            # recirc_quota is implemented more as a safeguard mechanism in Dart
-            if old_packet_item.recirc_quota == 0:
-                if random.uniform(0, 1) < 1-self.probability:
+        if old_packet in self.tracker.range_tracker_ref:
+            rt_entry = self.tracker.range_tracker_ref[old_packet]
+            eack = old_packet.seq + old_packet.size
+            if rt_entry.tracking_range.highest_ack < eack <= rt_entry.tracking_range.highest_eack:
+                if random.uniform(0, 1) < self.probability:
                     self.tracker[old_packet] = new_value
                 return
-            self.tracker[old_packet] = new_value
-            self.tracker.range_tracker_ref.update(
-                old_packet, recirc=old_packet_item.recirc_quota - 1)
+        self.tracker[old_packet] = new_value
 
 
 class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):

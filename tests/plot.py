@@ -31,7 +31,7 @@ redart.init(redart.config.TimestampScale.MICROSECOND, ignore_syn=True)
 
 print("===================== TRUTH =====================")
 truth = run_ground_truth.main(
-    f, cache_file=f+".cache", outgoing_only=args.outgoing_only)
+    f, cache_file=f+".cache", outgoing_only=args.outgoing_only, constr=tcp_trace_sim.TCPTraceSim)
 truth_values = {}
 
 for pkt in truth[0]:
