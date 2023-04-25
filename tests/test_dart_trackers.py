@@ -11,9 +11,6 @@ from redart.simulator.dart_sim import (
     RangeTracker)
 
 INF = 66145576821500209494471478855081
-redart.init(redart.config.TimestampScale.MILLISECOND,
-            ignore_syn=False,
-            logging_level="DEBUG")
 
 
 def test_tracker_operations():
@@ -113,5 +110,8 @@ def test_limited_memory(file: str, trace: list[Packet] = None, cache_file: str =
 
 if __name__ == '__main__':
     # test_tracker_operations()c
+    redart.init(redart.config.TimestampScale.MILLISECOND,
+                ignore_syn=False,
+                logging_level="DEBUG")
     test_limited_memory("../data/test.pcap",
                         cache_file="../data/test.pcap.cache")

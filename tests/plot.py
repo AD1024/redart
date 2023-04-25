@@ -8,7 +8,7 @@ import run_ground_truth
 import test_dart_trackers
 
 import redart
-from redart.simulator import dart_sim
+from redart.simulator import dart_sim, tcp_trace_sim
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="test")
