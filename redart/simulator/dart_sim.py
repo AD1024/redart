@@ -377,7 +377,6 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                 self.logger.warning("Flow changed; drop packet")
             else:
                 # recompute rtt
-                rtt = packet.timestamp - packet_item.timestamp
                 tcp_tuple = (packet.src, packet.dst,
                              packet.srcport, packet.dstport)
                 record_key = packet.to_src_dst_key()
@@ -385,21 +384,8 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                     self.flow_map[tcp_tuple] = record_key
                 if record_key not in self.rtt_samples:
                     self.rtt_samples[record_key] = []
-                if self.time_scale == TimestampScale.SECOND:
-                    self.rtt_samples[record_key].append(rtt.total_seconds())
-                elif self.time_scale == TimestampScale.MILLISECOND:
-                    self.rtt_samples[record_key].append(
-                        rtt / datetime.timedelta(milliseconds=1))
-                elif self.time_scale == TimestampScale.MICROSECOND:
-                    self.rtt_samples[record_key].append(
-                        rtt / datetime.timedelta(microseconds=1))
-                # upper = 500 if self.time_scale == TimestampScale.MICROSECOND else 0.5 if self.time_scale == TimestampScale.MILLISECOND else 0.0005
-                # if self.rtt_samples[record_key][-1] < upper:
-                #     # ignore "short legs" (i.e. RTT measured between the host and Wireshark)
-                #     self.logger.warning(
-                #         "Dropping short leg: %s -> %s @ %s", packet.src, packet.dst, packet.index)
-                #     self.rtt_samples[record_key].pop()
-                #     pass
+                self.rtt_samples[record_key].append(
+                    packet.time_since(packet_item.packet_ref))
 
     def update(self, packet: Packet, packet_value: PacketValueT):
         self.logger.info("Update SEQ packet: %s -> %s @ %s",
