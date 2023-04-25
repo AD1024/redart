@@ -49,8 +49,8 @@ class NaiveSimulator(SimulatorTrait):
                 elif self.time_scale == TimestampScale.MICROSECOND:
                     self.rtt_samples[key].append(
                         rtt / datetime.timedelta(microseconds=1))
-                if self.rtt_samples[key][-1] < 500:
-                    self.rtt_samples[key].pop()
+                # if self.rtt_samples[key][-1] < 500:
+                #     self.rtt_samples[key].pop()
                 if self.rtt_samples[key] == []:
                     self.rtt_samples.pop(key)
                 self.record.pop((key, packet.ack))
