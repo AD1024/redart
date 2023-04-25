@@ -406,7 +406,6 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                          packet.src, packet.dst, packet.index)
         pt_packet_key = hash_packet_key(packet)
         pt_packet_key = pt_packet_key % self.capacity
-        # AnnC: pt_packet_key seems not used?
         if packet in self:
             self.evict(packet, packet_value)
         else:

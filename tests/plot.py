@@ -12,6 +12,7 @@ from redart.simulator import dart_sim, tcp_trace_sim
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="test")
+parser.add_argument("--outgoing-only", action="store_true", default=False)
 parser.add_argument("--tracker-size", type=int, default=10001)
 parser.add_argument("--policy", type=str, default="dart")
 
@@ -30,7 +31,7 @@ redart.init(redart.config.TimestampScale.MICROSECOND, ignore_syn=True)
 
 print("===================== TRUTH =====================")
 truth = run_ground_truth.main(
-    f, cache_file=f+".cache", constr=tcp_trace_sim.TCPTraceSim)
+    f, cache_file=f+".cache", outgoing_only=args.outgoing_only)
 truth_values = {}
 
 for pkt in truth[0]:
@@ -122,16 +123,19 @@ plot_hist(axs[0], max(lens, key=lens.get))
 lens.pop(max(lens, key=lens.get))
 lens.pop(max(lens, key=lens.get))
 plot_hist(axs[1], max(lens, key=lens.get))
-hist.savefig("figures/{}_hist.png".format(dataset), dpi=300)
+hist.savefig("figures/{}_{}_{}_hist.png".format(dataset,
+             args.policy, args.tracker_size), dpi=300)
 
 
 bar, axs = plt.subplots(1, 1)
 plot_horizontal_bar(axs)
-bar.savefig("figures/{}_bar.png".format(dataset), dpi=300)
+bar.savefig("figures/{}_{}_{}_bar.png".format(dataset,
+            args.policy, args.tracker_size), dpi=300)
 
 
 cdf, axs = plt.subplots(1, 1)
 # ub = ("y", 1.0)
 ub = ("x", 120000)
 plot_cdf(axs, ub)
-cdf.savefig("figures/{}_cdf.png".format(dataset), dpi=300)
+cdf.savefig("figures/{}_{}_{}_cdf.png".format(dataset,
+            args.policy, args.tracker_size), dpi=300)
