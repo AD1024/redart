@@ -8,11 +8,11 @@ redart.init(redart.config.TimestampScale.MICROSECOND)
 logging = get_logger("RunNaiveSim")
 
 
-def main(file: str, trace=None, cache_file: str = None):
+def main(file: str, trace=None, cache_file: str = None, outgoing_only=False):
     logging.info("Running ground truth simulator on %s", file)
     simulator = NaiveSimulator()
     if trace is None:
-        trace = parse_pcap(file, cache_file)
+        trace = parse_pcap(file, cache_file, outgoing_only)
     simulator.run_trace(trace)
 
     vis = set()

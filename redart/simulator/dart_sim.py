@@ -393,20 +393,19 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                 elif self.time_scale == TimestampScale.MICROSECOND:
                     self.rtt_samples[record_key].append(
                         rtt / datetime.timedelta(microseconds=1))
-                upper = 500 if self.time_scale == TimestampScale.MICROSECOND else 0.5 if self.time_scale == TimestampScale.MILLISECOND else 0.0005
-                if self.rtt_samples[record_key][-1] < upper:
-                    # ignore "short legs" (i.e. RTT measured between the host and Wireshark)
-                    self.logger.warning(
-                        "Dropping short leg: %s -> %s @ %s", packet.src, packet.dst, packet.index)
-                    self.rtt_samples[record_key].pop()
-                    pass
+                # upper = 500 if self.time_scale == TimestampScale.MICROSECOND else 0.5 if self.time_scale == TimestampScale.MILLISECOND else 0.0005
+                # if self.rtt_samples[record_key][-1] < upper:
+                #     # ignore "short legs" (i.e. RTT measured between the host and Wireshark)
+                #     self.logger.warning(
+                #         "Dropping short leg: %s -> %s @ %s", packet.src, packet.dst, packet.index)
+                #     self.rtt_samples[record_key].pop()
+                #     pass
 
     def update(self, packet: Packet, packet_value: PacketValueT):
         self.logger.info("Update SEQ packet: %s -> %s @ %s",
                          packet.src, packet.dst, packet.index)
         pt_packet_key = hash_packet_key(packet)
         pt_packet_key = pt_packet_key % self.capacity
-        # AnnC: pt_packet_key seems not used?
         if packet in self:
             self.evict(packet, packet_value)
         else:
