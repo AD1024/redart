@@ -222,6 +222,8 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                                 packet.src, packet.srcport, packet.dst, packet.dstport, packet.index)
             return RangeTrackerValidateAction.IGNORE
         if packet_key in self:
+            # if self[packet_key].packet_ref.to_src_dst_key() != packet.to_src_dst_key():
+            #     return RangeTrackerValidateAction.IGNORE
             entry = self[packet_key].tracking_range
             if packet.is_seq():
                 if entry.highest_eack <= packet.seq:
@@ -365,8 +367,8 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         return super().get(packet % self.capacity)
 
     def __setitem__(self, __key: RangeKeyT, __value: RangeValueT):
-        if (__key % self.capacity) in self:
-            self.evict(__key % self.capacity, __value)
+        # if (__key % self.capacity) in self:
+        #     self.evict(__key % self.capacity, __value)
         super().__setitem__(__key % self.capacity, __value)
 
     def __getitem__(self, __key: Union[RangeKeyT, Packet]) -> RangeValueT:
