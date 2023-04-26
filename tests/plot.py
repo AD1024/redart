@@ -25,7 +25,7 @@ args = parser.parse_args()
 eviction_policies = {
     "dart": dart_sim.PacketTrackerEviction,
     "prob": dart_sim.PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation,
-    "prob_recirc": dart_sim.PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation,
+    "prob-recirc": dart_sim.PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation,
 }
 
 rt_eviction_policies = {
