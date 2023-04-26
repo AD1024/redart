@@ -172,6 +172,8 @@ class RangeTrackerEvictionRefined(EvictionTrait[Tuple[RangeKeyT, RangeValueT]]):
         super().__init__(tracker, name=name)
 
     def evict(self, value: Tuple[RangeKeyT, RangeValueT], *args):
+        self.logger.warning(
+            "RT Eviction with in-flight threshold %s", self.in_flight_threshold)
         key, new_value = value
         self.tracker: RangeTracker
         assert key in self.tracker
@@ -221,9 +223,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
             self.logger.warning("Flow finished for %s:%s -> %s:%s @ %s",
                                 packet.src, packet.srcport, packet.dst, packet.dstport, packet.index)
             return RangeTrackerValidateAction.IGNORE
-        if packet_key in self:
-            # if self[packet_key].packet_ref.to_src_dst_key() != packet.to_src_dst_key():
-            #     return RangeTrackerValidateAction.IGNORE
+        if packet in self:
             entry = self[packet_key].tracking_range
             if packet.is_seq():
                 if entry.highest_eack <= packet.seq:
@@ -367,8 +367,10 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
         return super().get(packet % self.capacity)
 
     def __setitem__(self, __key: RangeKeyT, __value: RangeValueT):
-        # if (__key % self.capacity) in self:
-        #     self.evict(__key % self.capacity, __value)
+        if (__key % self.capacity) in self:
+            self.evict(__key % self.capacity, __value)
+            print(self)
+            return
         super().__setitem__(__key % self.capacity, __value)
 
     def __getitem__(self, __key: Union[RangeKeyT, Packet]) -> RangeValueT:
@@ -376,8 +378,12 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
 
     def __contains__(self, packet: Union[RangeKeyT, Packet]) -> bool:
         if isinstance(packet, Packet):
-            packet = packet.to_src_dst_key()
-        return super().__contains__(packet % self.capacity)
+            packet_key = packet.to_src_dst_key()
+            if super().__contains__(packet_key % self.capacity):
+                return self.get(packet).packet_ref.to_src_dst_key() == packet_key
+            return False
+        else:
+            return super().__contains__(packet % self.capacity)
 
 
 class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
