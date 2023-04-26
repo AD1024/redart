@@ -1,6 +1,6 @@
 # COS561 Final Project: Reimplementing Continuous In-Network Round-Trip Time Monitoring with DART
 
-**Group Member**: Haichen Dong (hd5234), Deyuan (Mike) He (dh7120), Ann Zhou (az6922) and Kaiqu Liang (kl2471)
+**Group Members**: Haichen Dong (hd5234), Deyuan (Mike) He (dh7120), Ann Zhou (az6922) and Kaiqu Liang (kl2471)
 
 **Keywords**: RTT Measurement, Simulation
 
@@ -17,7 +17,7 @@ In addition to these dependencies, our simulation requires [Wireshark](https://w
 
 Install [Homebrew](https://brew.sh/) first, then:
 ```
-$ brew install tshark
+$ brew install wireshark
 ```
 
 ## Linux
