@@ -104,7 +104,7 @@ def plot_hist(ax, key):
             label="TCPtrace", color=cmap(0))
     ax.hist(dart_values[key], bins, alpha=0.6, label="ReDart", color=cmap(1))
     ax.legend(loc='upper right')
-    ax.set_xlabel("RTT(us)")
+    ax.set_xlabel("RTT(ms)")
     ax.set_title(dataset)
 
 
@@ -125,7 +125,7 @@ def plot_cdf(ax, ub=("y", 1.0)):
     x_truth, y_truth = get_cdf(truth_entries)
     ax.plot(x_truth, y_truth, label="TCPtrace", color=cmap(1))
     ax.legend(loc='lower right')
-    ax.set_xlabel("RTT(us)")
+    ax.set_xlabel("RTT(ms)")
     ax.set_ylabel("CDF")
     ax.set_title(dataset)
 
