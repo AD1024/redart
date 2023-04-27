@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 from enum import IntEnum
 from functools import lru_cache
@@ -25,7 +26,7 @@ class Packet:
         payload (str): The payload of the packet.
     """
 
-    def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: float, packet_size: int, packet_type: PacketType, *, payload=None, index=None):
+    def __init__(self, src: str, srcport: int, dst: str, dstport: int, ack: int, seq: int, timestamp: datetime.datetime, packet_size: int, packet_type: PacketType, *, payload=None, index=None):
         self.src = src
         self.srcport = srcport
         self.dst = dst
@@ -33,7 +34,7 @@ class Packet:
         self.ack = ack
         self.seq = seq
         self.payload = payload
-        self._timestamp = float(timestamp)
+        self._timestamp = timestamp
         self.packet_size = packet_size
         self.packet_type = packet_type
         self.index = index
@@ -65,14 +66,24 @@ class Packet:
         return self.packet_type
 
     @property
-    def timestamp(self):
-        cfg = get_config()
-        if cfg.timescale == TimestampScale.SECOND:
-            return self._timestamp
-        elif cfg.timescale == TimestampScale.MILLISECOND:
-            return self._timestamp * 1e3
-        elif cfg.timescale == TimestampScale.MICROSECOND:
-            return self._timestamp * 1e6
+    def timestamp(self) -> datetime.datetime:
+        return self._timestamp
+
+    @lru_cache
+    def _current_time_scale(self):
+        return get_config().timescale
+
+    def time_since(self, other) -> float:
+        assert isinstance(other, Packet)
+        diff = self.timestamp - other.timestamp
+        time_scale = self._current_time_scale()
+        if time_scale == TimestampScale.SECOND:
+            return diff.total_seconds()
+        if time_scale == TimestampScale.MILLISECOND:
+            return diff / datetime.timedelta(milliseconds=1)
+        if time_scale == TimestampScale.MICROSECOND:
+            return diff / datetime.timedelta(microseconds=1)
+        raise ValueError(f"Unknown timescale {time_scale}")
 
     @lru_cache
     def to_src_dst_key(self):
@@ -81,7 +92,7 @@ class Packet:
         """
         src_hash = int(hashlib.sha256(self.src.encode()).hexdigest(), 16)
         dst_hash = int(hashlib.sha256(self.dst.encode()).hexdigest(), 16)
-        return src_hash ^ dst_hash ^ self.srcport ^ self.dstport
+        return (src_hash ^ dst_hash ^ self.srcport ^ self.dstport) % 556580197052749600253904711163
 
     def to_dict(self):
         return {

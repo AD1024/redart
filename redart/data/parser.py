@@ -11,6 +11,7 @@ from redart.data.packet import Packet, PacketType
 
 def build_packet_type(tcp_info):
     if int(tcp_info.len) == 0:
+        assert tcp_info.flags_ack == '1'
         ptype = PacketType.ACK
     else:
         ptype = PacketType.SEQ
@@ -63,7 +64,7 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
                 int(frame.tcp.dstport),
                 int(frame.tcp.ack),
                 int(frame.tcp.seq),
-                float(frame.sniff_timestamp),
+                frame.sniff_time,
                 int(frame.tcp.len),
                 build_packet_type(frame.tcp),
                 index=i
@@ -72,6 +73,8 @@ def parse_pcap(file: str, cache_file=None) -> list[Packet]:
         except KeyError:
             logging.warning('Packet %s is not an IP packet',
                             str(frame), exc_info=True)
+        except AssertionError:
+            continue
 
     if cache_file is not None:
         with open(cache_file, 'wb') as fd:
