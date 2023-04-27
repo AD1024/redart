@@ -93,7 +93,7 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
 
     def evict(self, values: Tuple[Packet, PacketValueT], *args):
         self.logger.warning("Evicting %s -> %s @ %s",
-                            values[0].src, values[0].dst, values[0].index)
+                            values[1].packet_ref.src, values[1].packet_ref.dst, values[1].packet_ref.index)
         self.tracker: PacketTracker
         (old_packet, new_value) = values
         assert old_packet in self.tracker
