@@ -1,4 +1,5 @@
 """DART simulator re-implementation with better interfaces"""
+import copy
 import datetime
 import enum
 import random
@@ -311,7 +312,8 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                             return
                         range_item.packet_ref = packet
                         range_item.timestamp = packet.timestamp
-                        self.packet_tracker_ref.update(packet, range_item)
+                        self.packet_tracker_ref.update(
+                            packet, copy.deepcopy(range_item))
                     else:
                         self.logger.warning(
                             "Measurement Range Violation due to SEQ @ %s", packet.index)
@@ -336,7 +338,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                         super().__setitem__(rt_packet_key, range_item)
                     self.packet_tracker_ref.match(packet)
             else:
-                assert len(self) <= self.capacity, "Range tracker is full"
+                assert len(self) < self.capacity, "Range tracker is full"
                 assert packet.is_seq()
                 # flow not in range tracker, check packet tracker
                 # if exists, then this is a retransmission and we can drop
@@ -359,7 +361,7 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
                 )
                 self[rt_packet_key] = packet_value
                 self.packet_tracker_ref.update(
-                    packet, packet_value)
+                    packet, copy.deepcopy(packet_value))
 
     def get(self, packet: Union[RangeKeyT, Packet]) -> RangeValueT:
         if isinstance(packet, Packet):
@@ -369,7 +371,6 @@ class RangeTracker(TrackerTrait[RangeKeyT, RangeValueT]):
     def __setitem__(self, __key: RangeKeyT, __value: RangeValueT):
         if (__key % self.capacity) in self:
             self.evict(__key % self.capacity, __value)
-            print(self)
             return
         super().__setitem__(__key % self.capacity, __value)
 
@@ -441,10 +442,8 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
         if packet in self:
             self.evict(packet, packet_value)
         else:
-            if len(self) < self.capacity:
-                self[packet] = packet_value
-            else:
-                pass
+            assert len(self) < self.capacity, "Packet tracker is full"
+            self[packet] = packet_value
 
     def evict(self, packet: Packet, insert: PacketValueT):
         assert packet in self
