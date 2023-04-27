@@ -161,3 +161,41 @@ ub = ("y", 0.97)
 plot_cdf(axs[0], axs[1], ub)
 cdf.savefig("figures/{}_{}_{}_{}_cdf.png".format(dataset,
             args.pt_policy, args.rt_policy, args.packet_tracker_size), dpi=300)
+
+def test_dart_for_size(sz):
+    dart = test_dart_trackers.test_flow(
+        f, truth[2], pt_capacity=sz,
+        pt_policy=eviction_policies[args.pt_policy],
+        outgoing_only=args.outgoing_only,
+        rt_policy=rt_eviction_policies[args.rt_policy],
+        total_capacity=sz + 20000)
+    dart_values = {}
+    # print(dart[0])
+
+    for pkt in dart[0]:
+        if pkt[0] > pkt[2]:
+            dart_values[pkt[0:4]] = pkt[4]
+        else:
+            dart_values[(pkt[2], pkt[3], pkt[0], pkt[1])] = pkt[4]
+
+    dart_entries = all_entries(dart_values.values())
+    return len(dart_entries)
+
+pt_x = []
+pt_y = []
+
+for _sz in range(6, 16):
+    sz = (2 ** _sz) - 1
+    result = test_dart_for_size(sz)
+    pt_x.append(_sz)
+    pt_y.append(100.0 * result / len(truth_entries))
+
+print(pt_x, pt_y)
+
+sz_plot, axs = plt.subplots(1, 1)
+# plot_horizontal_bar(axs)
+axs.plot(pt_x, pt_y)
+axs.set_xlabel("log2(Table Size)")
+axs.set_ylabel("RTT Count Fraction (%)")
+sz_plot.savefig("figures/{}_{}_{}_size.png".format(dataset,
+            args.pt_policy, args.rt_policy), dpi=300)
