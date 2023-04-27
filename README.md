@@ -82,11 +82,13 @@ $ python3 plot.py
 
 ## Reproduce Results in Extension
 
-## CDF plots
+## Unbiased RTT Measurements
+
+### CDF plots
 ```
-$ python3 ext_cdf.py --dataset smallFlows --packet-tracker-size 32
+$ python3 ext_bias_cdf.py --dataset smallFlows --packet-tracker-size {32,256}
 ```
 
 ```
-$ python3 ext_cdf.py --dataset capture_4 --outgoing-only --packet-tracker-size 16
+$ python3 ext_bias_cdf.py --dataset capture_4 --outgoing-only --packet-tracker-size 16
 ```

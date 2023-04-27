@@ -147,5 +147,5 @@ cdf, axs = plt.subplots(1, 1)
 # ub = ("y", 1.0)
 ub = ("x", 120000)
 plot_cdf(axs, ub)
-cdf.savefig("figures/ext_cdf_{}_{}_{}.png".format(dataset,
+cdf.savefig("figures/ext_bias_cdf_{}_{}_{}.png".format(dataset,
             args.rt_policy, args.packet_tracker_size), dpi=300)
