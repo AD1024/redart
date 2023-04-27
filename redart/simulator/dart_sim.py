@@ -109,7 +109,7 @@ class PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation(EvictionTrait
     """
     Upon seeing a hash collection, we prefer to store the new packet and discard the old packet with probability.
     """
-    probability = 0.5
+    probability = 1
 
     def evict(self, values: Tuple[Packet, PacketValueT], *args):
         self.logger.info("Evicting %s -> %s @ %s",
@@ -127,7 +127,7 @@ class PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation(EvictionTra
     However, if the old packet is valid and it comes back, we prefer new packet over it with probability.
     """
 
-    probability = 1
+    probability = 0.5
 
     def evict(self, values: Tuple[Packet, PacketValueT], *args):
         self.logger.warning("Evicting %s -> %s @ %s",
