@@ -92,3 +92,8 @@ $ python3 ext_bias_cdf.py --dataset smallFlows --packet-tracker-size {32,256}
 ```
 $ python3 ext_bias_cdf.py --dataset capture_4 --outgoing-only --packet-tracker-size 16
 ```
+
+### Count calculation
+```
+$ python3 ext_bias_count.py --dataset capture_4 --outgoing-only --packet-tracker-size {64,128,256,512,1024,2048}
+```
