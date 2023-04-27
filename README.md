@@ -8,7 +8,7 @@
 
 We have tested our implementation on macOS 12.6. To install Python dependencies:
 ```
-$ python3 -m pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 
 In addition to these dependencies, our simulation requires [Wireshark](https://www.wireshark.org/) in order to parse trace files.
@@ -17,18 +17,20 @@ In addition to these dependencies, our simulation requires [Wireshark](https://w
 
 Install [Homebrew](https://brew.sh/) first, then:
 ```
-$ brew install wireshark
+brew install wireshark
 ```
 
 ## Linux
 ```
-$ sudo apt update
-$ sudo apt-get install wireshark
+sudo apt update && sudo apt-get install wireshark
 ```
 
 ## Windows
 
 Available at [Wireshark](https://www.wireshark.org/) official site.
+
+If the installation and path configuration is properly done,
+you will be able to run `tshark` through command line tools.
 
 # Reproducing Plots
 
@@ -38,7 +40,7 @@ Specifically, to run simulation on a trace file, first place the `pcap` file und
 
 For instance, to run simulation with `capture_1.pcap`, simply execute
 ```
-$ python3 plot.py --dataset capture_4
+$ python3 plot.py --dataset capture_1
 ```
 
 By default, the capacity of Range Table and Packet Table is infinite.
