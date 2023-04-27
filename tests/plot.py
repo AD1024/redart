@@ -99,7 +99,7 @@ def plot_horizontal_bar(ax):
 
 def plot_hist(ax, key):
     mx = float(max(max(truth_values[key]), max(dart_values[key])))
-    bins = np.linspace(0, 20000, 40)
+    bins = np.linspace(0, mx, 40)
     ax.hist(truth_values[key], bins, alpha=0.6,
             label="TCPtrace", color=cmap(0))
     ax.hist(dart_values[key], bins, alpha=0.6, label="ReDart", color=cmap(1))
@@ -108,26 +108,33 @@ def plot_hist(ax, key):
     ax.set_title(dataset)
 
 
-def plot_cdf(ax, ub=("y", 1.0)):
+def plot_cdf(ax, ax_large, ub=("y", 1.0)):
 
     def get_cdf(l):
         x, c = np.unique(l, return_counts=True)
         csum = np.cumsum(c)
         csum = csum / csum[-1]
         idx = (csum if ub[0] == "y" else x).searchsorted(ub[1])
-        # idx2 = x.searchsorted(1000)
-        idx2 = 0
         print("ub", ub, "x[idx]", x[idx-1], "y[idx]", csum[idx-1])
-        return x[idx2:idx], csum[idx2:idx]
+        return x[:idx], csum[:idx], x[idx:], 1 - csum[idx:]
 
-    x_dart, y_dart = get_cdf(dart_entries)
+    x_dart, y_dart, x_dart_large, y_dart_large = get_cdf(dart_entries)
     ax.plot(x_dart, y_dart, label="ReDart", color=cmap(0))
-    x_truth, y_truth = get_cdf(truth_entries)
+    x_truth, y_truth, x_truth_large, y_truth_large = get_cdf(truth_entries)
     ax.plot(x_truth, y_truth, label="TCPtrace", color=cmap(1))
     ax.legend(loc='lower right')
     ax.set_xlabel("RTT(ms)")
     ax.set_ylabel("CDF")
     ax.set_title(dataset)
+
+    # x_dart, y_dart = get_cdf(dart_entries)
+    ax_large.plot(x_dart_large, y_dart_large, label="ReDart", color=cmap(0))
+    # x_truth, y_truth = get_cdf(truth_entries)
+    ax_large.plot(x_truth_large, y_truth_large, label="TCPtrace", color=cmap(1))
+    ax_large.legend(loc='upper right')
+    ax_large.set_xlabel("RTT(ms)")
+    ax_large.set_ylabel("CDF")
+    ax_large.set_title(dataset)
 
 
 hist, axs = plt.subplots(1, 2)
@@ -148,9 +155,9 @@ bar.savefig("figures/{}_{}_{}_{}_bar.png".format(dataset,
             args.pt_policy, args.rt_policy, args.packet_tracker_size), dpi=300)
 
 
-cdf, axs = plt.subplots(1, 1)
+cdf, axs = plt.subplots(1, 2, figsize=(10, 5))
 # ub = ("y", 1.0)
-ub = ("x", 120000)
-plot_cdf(axs, ub)
+ub = ("y", 0.97)
+plot_cdf(axs[0], axs[1], ub)
 cdf.savefig("figures/{}_{}_{}_{}_cdf.png".format(dataset,
             args.pt_policy, args.rt_policy, args.packet_tracker_size), dpi=300)
