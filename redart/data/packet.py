@@ -90,10 +90,8 @@ class Packet:
         """
         Hash src and dst to a key
         """
-        src_hash = int(hashlib.md5(self.src.encode()
-                                   ).hexdigest(), 16) % 5442527
-        dst_hash = int(hashlib.md5(self.dst.encode()
-                                   ).hexdigest(), 16) % 5442527
+        src_hash = int(hashlib.md5(self.src.encode()).hexdigest(), 16) % 5442527
+        dst_hash = int(hashlib.md5(self.dst.encode()).hexdigest(), 16) % 5442527
         return (src_hash ^ dst_hash ^ self.srcport ^ self.dstport) % 5442527
 
     def to_dict(self):
