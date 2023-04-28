@@ -58,7 +58,7 @@ for pkt in truth[0]:
 
 
 print("===================== DART =====================")
-dart = test_dart_trackers.test_flow(
+dart, _ = test_dart_trackers.test_flow(
     f, truth[2], pt_capacity=args.packet_tracker_size,
     pt_policy=eviction_policies["dart"],
     outgoing_only=args.outgoing_only,
@@ -74,7 +74,7 @@ for pkt in dart[0]:
 
 
 print("===================== PROB =====================")
-prob = test_dart_trackers.test_flow(
+prob, _ = test_dart_trackers.test_flow(
     f, truth[2], pt_capacity=args.packet_tracker_size,
     pt_policy=eviction_policies["prob"],
     outgoing_only=args.outgoing_only,
@@ -90,7 +90,7 @@ for pkt in prob[0]:
 
 
 print("===================== PROB-RECIRC =====================")
-prob_recirc = test_dart_trackers.test_flow(
+prob_recirc, _ = test_dart_trackers.test_flow(
     f, truth[2], pt_capacity=args.packet_tracker_size,
     pt_policy=eviction_policies["prob-recirc"],
     outgoing_only=args.outgoing_only,
@@ -119,7 +119,6 @@ prob_recirc_entries.sort()
 truth_entries.sort()
 
 
-
 def calculate_percentile(entry_array, p):
     p = p/100
     # entry_array.sort()
@@ -131,11 +130,13 @@ def calculate_percentile(entry_array, p):
     # print(f'{entry_array[index]},{truth_entries[truth_index]}')
     return (entry_array[index]-truth_entries[truth_index])/truth_entries[truth_index]
 
+
 def calculate_max_error_percentile(entry_array):
     max_error = -1
     for p in range(5, 96):
-        max_error = max(max_error, abs(calculate_percentile(entry_array,p)))
+        max_error = max(max_error, abs(calculate_percentile(entry_array, p)))
     return max_error
+
 
 print(f'RTT collection error')
 print(f'Dart')
