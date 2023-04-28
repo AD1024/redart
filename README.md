@@ -102,3 +102,10 @@ $ python3 ext_bias_count.py --dataset capture_4 --outgoing-only --packet-tracker
 ```
 $ python3 ext_bias_error.py --dataset smallFlows --packet-tracker-size 15000
 ```
+
+## Switch Memory Allocation
+
+### Count calculation
+```
+python3 ext_memory_count.py --dataset smallFlows --total-size 15000
+```
