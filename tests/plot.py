@@ -9,6 +9,7 @@ import test_dart_trackers
 
 import redart
 from redart.simulator import dart_sim, tcp_trace_sim
+import tests.counter as __counter
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="test")
@@ -38,7 +39,7 @@ rt_eviction_policies = {
 dataset = args.dataset
 f = "../data/{}.pcap".format(dataset)
 
-redart.init(redart.config.TimestampScale.MILLISECOND, ignore_syn=True)
+redart.init(redart.config.TimestampScale.MILLISECOND, ignore_syn=True, logging_level="ERROR")
 
 print("===================== TRUTH =====================")
 truth = run_ground_truth.main(
@@ -133,7 +134,7 @@ def plot_cdf(ax, ax_large, ub=("y", 1.0)):
     ax_large.plot(x_truth_large, y_truth_large, label="TCPtrace", color=cmap(1))
     ax_large.legend(loc='upper right')
     ax_large.set_xlabel("RTT(ms)")
-    ax_large.set_ylabel("CDF")
+    ax_large.set_ylabel("CCDF")
     ax_large.set_title(dataset)
 
 
@@ -179,24 +180,56 @@ def test_dart_for_size(sz):
             dart_values[(pkt[2], pkt[3], pkt[0], pkt[1])] = pkt[4]
 
     dart_entries = all_entries(dart_values.values())
-    return len(dart_entries)
+    return dart_entries
 
 pt_x = []
 pt_y = []
+pt_z = []
+pt_r50 = []
+pt_r95 = []
+pt_r99 = []
 
-for _sz in range(6, 16):
+truth_entries.sort()
+t50 = truth_entries[int(len(truth_entries) * 0.5)]
+t95 = truth_entries[int(len(truth_entries) * 0.95)]
+t99 = truth_entries[int(len(truth_entries) * 0.99)]
+
+for _sz in range(9, 17):
 # for _sz in [13, 14]:
-    sz = (2 ** _sz) - 1
+    __counter.__DIRTY_CODE_NUM_OF_EVICTION = 0
+    sz = (2 ** _sz) + 1
     result = test_dart_for_size(sz)
     pt_x.append(_sz)
-    pt_y.append(100.0 * result / len(truth_entries))
 
-print(pt_x, pt_y)
+    pt_y.append(100.0 * len(result) / len(truth_entries))
+    pt_z.append(__counter.__DIRTY_CODE_NUM_OF_EVICTION / len(truth[2]))
+    
+    result.sort()
+    pt_r50.append(abs(result[int(len(result) * 0.5)] / t50 - 1)*100)
+    pt_r95.append(abs(result[int(len(result) * 0.95)] / t95 - 1)*100)
+    pt_r99.append(abs(result[int(len(result) * 0.99)] / t99 - 1)*100)
 
-sz_plot, axs = plt.subplots(1, 1)
-# plot_horizontal_bar(axs)
-axs.plot(pt_x, pt_y)
-axs.set_xlabel("log2(Table Size)")
-axs.set_ylabel("RTT Count Fraction (%)")
+print(pt_x, pt_y, pt_z)
+
+sz_plot, axs = plt.subplots(1, 3, figsize=(13, 5))
+axs[0].plot(pt_x, pt_r50, "-.o", label="50th percentile")
+axs[0].plot(pt_x, pt_r95, "-.o", label="95th percentile")
+axs[0].plot(pt_x, pt_r99, "-.o", label="99th percentile")
+axs[0].legend(loc='upper right')
+axs[0].set_xlabel("log2(Table Size)")
+axs[0].set_ylabel("RTT Collection Error (%)")
+
+axs[1].plot(pt_x, pt_y, "-o")
+axs[1].set_xlabel("log2(Table Size)")
+axs[1].set_ylabel("RTT Count Fraction (%)")
+
+
+axs[2].plot(pt_x, pt_z, "-o")
+axs[2].set_xlabel("log2(Table Size)")
+axs[2].set_ylabel("Recirculations Per Packet")
+
 sz_plot.savefig("figures/{}_{}_{}_size.png".format(dataset,
             args.pt_policy, args.rt_policy), dpi=300)
+
+
+print("truth", t50, t95, t99)
