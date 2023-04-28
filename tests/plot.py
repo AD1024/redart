@@ -184,19 +184,19 @@ def test_dart_for_size(sz):
 pt_x = []
 pt_y = []
 
-# for _sz in range(6, 16):
-# # for _sz in [13, 14]:
-#     sz = (2 ** _sz) - 1
-#     result = test_dart_for_size(sz)
-#     pt_x.append(_sz)
-#     pt_y.append(100.0 * result / len(truth_entries))
+for _sz in range(6, 16):
+# for _sz in [13, 14]:
+    sz = (2 ** _sz) - 1
+    result = test_dart_for_size(sz)
+    pt_x.append(_sz)
+    pt_y.append(100.0 * result / len(truth_entries))
 
-# print(pt_x, pt_y)
+print(pt_x, pt_y)
 
-# sz_plot, axs = plt.subplots(1, 1)
-# # plot_horizontal_bar(axs)
-# axs.plot(pt_x, pt_y)
-# axs.set_xlabel("log2(Table Size)")
-# axs.set_ylabel("RTT Count Fraction (%)")
-# sz_plot.savefig("figures/{}_{}_{}_size.png".format(dataset,
-#             args.pt_policy, args.rt_policy), dpi=300)
+sz_plot, axs = plt.subplots(1, 1)
+# plot_horizontal_bar(axs)
+axs.plot(pt_x, pt_y)
+axs.set_xlabel("log2(Table Size)")
+axs.set_ylabel("RTT Count Fraction (%)")
+sz_plot.savefig("figures/{}_{}_{}_size.png".format(dataset,
+            args.pt_policy, args.rt_policy), dpi=300)

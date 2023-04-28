@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 from enum import IntEnum
 from functools import lru_cache
 
@@ -89,8 +90,8 @@ class Packet:
         """
         Hash src and dst to a key
         """
-        src_hash = hash(self.src)
-        dst_hash = hash(self.dst)
+        src_hash = int(hashlib.md5(self.src.encode()).hexdigest(), 16) % 37165831
+        dst_hash = int(hashlib.md5(self.dst.encode()).hexdigest(), 16) % 37165831
         return (src_hash ^ dst_hash ^ self.srcport ^ self.dstport) % 37165831
 
     def to_dict(self):
