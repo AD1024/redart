@@ -58,7 +58,7 @@ for pkt in truth[0]:
 
 
 print("===================== DART =====================")
-dart, _ = test_dart_trackers.test_flow(
+dart = test_dart_trackers.test_flow(
     f, truth[2], pt_capacity=args.packet_tracker_size,
     pt_policy=eviction_policies["dart"],
     outgoing_only=args.outgoing_only,
@@ -74,7 +74,7 @@ for pkt in dart[0]:
 
 
 print("===================== PROB =====================")
-prob, _ = test_dart_trackers.test_flow(
+prob = test_dart_trackers.test_flow(
     f, truth[2], pt_capacity=args.packet_tracker_size,
     pt_policy=eviction_policies["prob"],
     outgoing_only=args.outgoing_only,
@@ -90,7 +90,7 @@ for pkt in prob[0]:
 
 
 print("===================== PROB-RECIRC =====================")
-prob_recirc, _ = test_dart_trackers.test_flow(
+prob_recirc = test_dart_trackers.test_flow(
     f, truth[2], pt_capacity=args.packet_tracker_size,
     pt_policy=eviction_policies["prob-recirc"],
     outgoing_only=args.outgoing_only,
@@ -133,14 +133,14 @@ def plot_cdf(ax, ub=("y", 1.0)):
     x_prob, y_prob = get_cdf(prob_entries)
     ax.plot(x_prob, y_prob, label="Favor-new", color=cmap(1))
     x_prob_recirc, y_prob_recirc = get_cdf(prob_recirc_entries)
-    ax.plot(x_prob_recirc, y_prob_recirc,
-            label="Recirc-probability", color=cmap(2))
+    ax.plot(x_prob_recirc, y_prob_recirc, label="Recirc-probability", color=cmap(2))
     x_truth, y_truth = get_cdf(truth_entries)
     ax.plot(x_truth, y_truth, label="TCPtrace", color=cmap(3))
     ax.legend(loc='lower right')
     ax.set_xlabel("RTT(ms)")
     ax.set_ylabel("CDF")
     ax.set_title(dataset)
+
 
 
 cdf, axs = plt.subplots(1, 1)

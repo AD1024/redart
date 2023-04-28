@@ -11,8 +11,9 @@ from typing import Callable, Tuple, Union
 from redart.config import get_config
 from redart.data import Packet, PacketType
 from redart.simulator import EvictionTrait, SimulatorTrait, TrackerTrait
-from redart.simulator.cuckoo_map import CuckooHash
 from redart.simulator.exceptions import EntryNotFountException
+
+from tests.counter import increase
 
 # Value of range tracker:
 # (flow_key, (Seq, Expected Ack), timestamp)
@@ -61,7 +62,6 @@ PacketValueT = RangeValueT
 PacketTrackerT = typing.NewType(
     "PacketTracker", TrackerTrait[PacketKeyT, PacketValueT])
 
-
 def _hash_packet_key(packet_key: Tuple[int, int]) -> int:
     a, b = packet_key
     return a * a + a + b if a >= b else a + b * b
@@ -93,17 +93,19 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
     """
 
     def evict(self, values: Tuple[Packet, PacketValueT], *args):
-        self.tracker.recirc_count += 1
+
+        increase()
+        
         self.logger.warning("Evicting %s -> %s @ %s",
                             values[1].packet_ref.src, values[1].packet_ref.dst, values[1].packet_ref.index)
         self.tracker: PacketTracker
         (old_packet, new_value) = values
+        assert old_packet in self.tracker
         if old_packet in self.tracker.range_tracker_ref:
             rt_entry = self.tracker.range_tracker_ref[old_packet]
             eack = old_packet.seq + old_packet.size
             if rt_entry.tracking_range.highest_ack < eack <= rt_entry.tracking_range.highest_eack:
                 return
-        assert self.tracker.pop(old_packet) is not None
         self.tracker[old_packet] = new_value
 
 
@@ -404,12 +406,10 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
         self.peers: set[int] = set()
         self.peers_record: dict[int, Tuple[str, int, str, int]] = {}
         self.time_scale = get_config().timescale
-        self.recirc_count = 0
         # (src <-> dst) -> (rtt samples)
         self.rtt_samples: dict[int, list[Decimal]] = {}
         # (src, dst, srcport, dstport) -> (src <-> dst)
         self.flow_map: dict[Tuple[str, str, int, int], int] = {}
-        self.table = CuckooHash(capacity)
         super().__init__(eviction_policy, name=name)
 
     def match(self, packet: Packet):
@@ -441,45 +441,32 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
     def update(self, packet: Packet, packet_value: PacketValueT):
         self.logger.info("Update SEQ packet: %s -> %s @ %s",
                          packet.src, packet.dst, packet.index)
-        if self.weak_contains(packet):
+        pt_packet_key = hash_packet_key(packet)
+        pt_packet_key = pt_packet_key % self.capacity
+        if packet in self:
             self.evict(packet, packet_value)
         else:
-            if len(self) == self.capacity:
-                first_collision = self.table.first_collision(
-                    str(hash_packet_key(packet)))
-                assert first_collision is not None
-                self.evict(first_collision.packet_ref, packet_value)
-            else:
-                self[packet] = packet_value
+            assert len(self) < self.capacity, "Packet tracker is full"
+            self[packet] = packet_value
 
     def evict(self, packet: Packet, insert: PacketValueT):
-        # assert self.weak_contains(packet)
+        assert packet in self
         self.eviction_policy: PacketTrackerEviction
         self.eviction_policy.evict((packet, insert))
 
     def pop(self, packet: Packet) -> PacketValueT:
-        return self.table.delete(str(hash_packet_key(packet)))
-
-    def __len__(self) -> int:
-        x = 0
-        for (k, v) in self.table.array:
-            if k is not None and v is not None:
-                x += 1
-        return x
+        return super().pop(hash_packet_key(packet) % self.capacity, None)
 
     def __setitem__(self, __key: Packet, __value: PacketValueT) -> None:
-        return self.table.set(str(hash_packet_key(__key)), __value)
+        return super().__setitem__(hash_packet_key(__key) % self.capacity, __value)
 
     def __getitem__(self, __key: Packet) -> PacketValueT:
         if __key not in self:
             return None
-        return self.table.get(str(hash_packet_key(__key)))
-
-    def weak_contains(self, packet: Packet) -> bool:
-        return self.table.first_collision(str(hash_packet_key(packet))) != None
+        return super().__getitem__(hash_packet_key(__key) % self.capacity)
 
     def __contains__(self, __key: Packet) -> bool:
-        return self.table.get(str(hash_packet_key(__key))) != None
+        return super().__contains__(hash_packet_key(__key) % self.capacity)
 
 
 class DartSimulator(SimulatorTrait):
