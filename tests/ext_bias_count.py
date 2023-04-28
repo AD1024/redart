@@ -58,7 +58,7 @@ for pkt in truth[0]:
 
 
 print("===================== DART =====================")
-dart = test_dart_trackers.test_flow(
+dart, _ = test_dart_trackers.test_flow(
     f, truth[2], pt_capacity=args.packet_tracker_size,
     pt_policy=eviction_policies["dart"],
     outgoing_only=args.outgoing_only,
@@ -74,7 +74,7 @@ for pkt in dart[0]:
 
 
 print("===================== PROB =====================")
-prob = test_dart_trackers.test_flow(
+prob, _ = test_dart_trackers.test_flow(
     f, truth[2], pt_capacity=args.packet_tracker_size,
     pt_policy=eviction_policies["prob"],
     outgoing_only=args.outgoing_only,
@@ -90,7 +90,7 @@ for pkt in prob[0]:
 
 
 print("===================== PROB-RECIRC =====================")
-prob_recirc = test_dart_trackers.test_flow(
+prob_recirc, _ = test_dart_trackers.test_flow(
     f, truth[2], pt_capacity=args.packet_tracker_size,
     pt_policy=eviction_policies["prob-recirc"],
     outgoing_only=args.outgoing_only,

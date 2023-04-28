@@ -14,8 +14,6 @@ from redart.simulator import EvictionTrait, SimulatorTrait, TrackerTrait
 from redart.simulator.cuckoo_map import CuckooHash
 from redart.simulator.exceptions import EntryNotFountException
 
-from tests.counter import increase
-
 # Value of range tracker:
 # (flow_key, (Seq, Expected Ack), timestamp)
 PacketKeyT = int
@@ -63,6 +61,7 @@ PacketValueT = RangeValueT
 PacketTrackerT = typing.NewType(
     "PacketTracker", TrackerTrait[PacketKeyT, PacketValueT])
 
+
 def _hash_packet_key(packet_key: Tuple[int, int]) -> int:
     a, b = packet_key
     return a * a + a + b if a >= b else a + b * b
@@ -94,9 +93,7 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
     """
 
     def evict(self, values: Tuple[Packet, PacketValueT], *args):
-
-        increase()
-        
+        self.tracker.recirc_count += 1
         self.logger.warning("Evicting %s -> %s @ %s",
                             values[1].packet_ref.src, values[1].packet_ref.dst, values[1].packet_ref.index)
         self.tracker: PacketTracker
@@ -407,6 +404,7 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
         self.peers: set[int] = set()
         self.peers_record: dict[int, Tuple[str, int, str, int]] = {}
         self.time_scale = get_config().timescale
+        self.recirc_count = 0
         # (src <-> dst) -> (rtt samples)
         self.rtt_samples: dict[int, list[Decimal]] = {}
         # (src, dst, srcport, dstport) -> (src <-> dst)
@@ -443,7 +441,7 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
     def update(self, packet: Packet, packet_value: PacketValueT):
         self.logger.info("Update SEQ packet: %s -> %s @ %s",
                          packet.src, packet.dst, packet.index)
-        if packet in self:
+        if self.weak_contains(packet):
             self.evict(packet, packet_value)
         else:
             if len(self) == self.capacity:
@@ -455,7 +453,7 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
                 self[packet] = packet_value
 
     def evict(self, packet: Packet, insert: PacketValueT):
-        assert self.weak_contains(packet)
+        # assert self.weak_contains(packet)
         self.eviction_policy: PacketTrackerEviction
         self.eviction_policy.evict((packet, insert))
 

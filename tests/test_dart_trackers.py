@@ -87,7 +87,7 @@ def test_flow(file: str, trace=None, pt_capacity: int = INF//2,
             sim.logger.warning(
                 "Failed to get RTT for peer %s:%s <-> %s:%s", *peer_name)
 
-    return result, trace
+    return (result, trace), sim
 
 
 def test_limited_memory(file: str, trace: list[Packet] = None, cache_file: str = None):
