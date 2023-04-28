@@ -68,7 +68,8 @@ def test_flow_insertion_inf_space():
 def test_flow(file: str, trace=None, pt_capacity: int = INF//2,
               outgoing_only=False,
               pt_policy: PacketTrackerEviction = PacketTrackerEviction,
-              rt_policy=MkRTProbabilisticEviction(0.0), total_capacity: int = INF):
+              rt_policy=MkRTProbabilisticEviction(0.0), total_capacity: int = INF,
+              get_evition_count=False):
     if trace is None:
         trace = parse_pcap(file)
     range_tracker = RangeTracker(
@@ -86,7 +87,8 @@ def test_flow(file: str, trace=None, pt_capacity: int = INF//2,
         except:
             sim.logger.warning(
                 "Failed to get RTT for peer %s:%s <-> %s:%s", *peer_name)
-
+    if get_evition_count:
+        return (result, trace), sim.range_tracker.packet_tracker_ref.eviction_count
     return result, trace
 
 

@@ -12,7 +12,6 @@ from redart.config import get_config
 from redart.data import Packet, PacketType
 from redart.simulator import EvictionTrait, SimulatorTrait, TrackerTrait
 from redart.simulator.exceptions import EntryNotFountException
-from tests.counter import increase
 
 # Value of range tracker:
 # (flow_key, (Seq, Expected Ack), timestamp)
@@ -93,9 +92,7 @@ class PacketTrackerEviction(EvictionTrait[Tuple[Packet, PacketValueT]]):
     """
 
     def evict(self, values: Tuple[Packet, PacketValueT], *args):
-
-        increase()
-
+        self.tracker.eviction_count += 1
         self.logger.warning("Evicting %s -> %s @ %s",
                             values[1].packet_ref.src, values[1].packet_ref.dst, values[1].packet_ref.index)
         self.tracker: PacketTracker
@@ -405,6 +402,7 @@ class PacketTracker(TrackerTrait[PacketKeyT, PacketValueT]):
         self.range_tracker_ref = range_tracker
         self.peers: set[int] = set()
         self.peers_record: dict[int, Tuple[str, int, str, int]] = {}
+        self.eviction_count = 0
         self.time_scale = get_config().timescale
         # (src <-> dst) -> (rtt samples)
         self.rtt_samples: dict[int, list[Decimal]] = {}

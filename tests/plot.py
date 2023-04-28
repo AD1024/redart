@@ -8,7 +8,6 @@ import run_ground_truth
 import test_dart_trackers
 
 import redart
-import tests.counter as __counter
 from redart.simulator import dart_sim, tcp_trace_sim
 
 parser = argparse.ArgumentParser()
@@ -167,12 +166,13 @@ cdf.savefig("figures/{}_{}_{}_{}_cdf.png".format(dataset,
 
 
 def test_dart_for_size(sz):
-    dart = test_dart_trackers.test_flow(
+    dart, ev_count = test_dart_trackers.test_flow(
         f, truth[2], pt_capacity=sz,
         pt_policy=eviction_policies[args.pt_policy],
         outgoing_only=args.outgoing_only,
         rt_policy=rt_eviction_policies[args.rt_policy],
-        total_capacity=sz + 20000)
+        total_capacity=sz + 20000,
+        get_evition_count=True)
     dart_values = {}
     # print(dart[0])
 
@@ -183,7 +183,7 @@ def test_dart_for_size(sz):
             dart_values[(pkt[2], pkt[3], pkt[0], pkt[1])] = pkt[4]
 
     dart_entries = all_entries(dart_values.values())
-    return dart_entries
+    return dart_entries, ev_count
 
 
 pt_x = []
@@ -200,13 +200,13 @@ t99 = truth_entries[int(len(truth_entries) * 0.99)]
 
 for _sz in range(9, 17):
     # for _sz in [13, 14]:
-    __counter.__DIRTY_CODE_NUM_OF_EVICTION = 0
+    # __counter.__DIRTY_CODE_NUM_OF_EVICTION = 0
     sz = (2 ** _sz) + 1
-    result = test_dart_for_size(sz)
+    result, ev_count = test_dart_for_size(sz)
     pt_x.append(_sz)
 
     pt_y.append(100.0 * len(result) / len(truth_entries))
-    pt_z.append(__counter.__DIRTY_CODE_NUM_OF_EVICTION / len(truth[2]))
+    pt_z.append(ev_count / len(truth[2]))
 
     result.sort()
     pt_r50.append(abs(result[int(len(result) * 0.5)] / t50 - 1)*100)
