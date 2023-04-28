@@ -11,6 +11,7 @@ sys.setrecursionlimit(100000)
 
 class CuckooHash(object):
     """Custom hash map which handles collisions using Cuckoo Hashing."""
+
     def __init__(self, size):
         """Initialize hash table of given size."""
         self._assert_valid_size(size)
@@ -46,7 +47,7 @@ class CuckooHash(object):
             # the set did not succeed, so we rehash the table with new hashes
             try:
                 self._rehash(*set_result)
-            except RuntimeError: # recursive stack limit exceeded
+            except RuntimeError:  # recursive stack limit exceeded
                 return False
         # self.nitems += int(increment_nitems)
         return True
@@ -83,9 +84,9 @@ class CuckooHash(object):
                 # set the array at the first hash of the key to key value pair
                 # and recursively re set the pair that was bumped out
                 (slot_key, slot_val), self.array[array_indices[0]] = \
-                                        self.array[array_indices[0]], (key, value)
+                    self.array[array_indices[0]], (key, value)
                 return self._set_helper(slot_key, slot_val, num_iters + 1)
-    
+
     def first_collision(self, key):
         for i in self._get_hashes(key):
             if self.array[i][0] is not None and self.array[i][1] is not None:
@@ -94,7 +95,7 @@ class CuckooHash(object):
 
     def _add_to_free_slot(self, key, value, array_indices):
         """
-        Attempt to add key value pair and return "success" on sucess and 
+        Attempt to add key value pair and return "success" on sucess and
         "failure" if all hashes hashed to an occupied slot."""
         for i in array_indices:
             slot_key, _ = self.array[i]
@@ -147,9 +148,9 @@ class CuckooHash(object):
         else:
             self.nitems -= 1
             (_, val), self.array[array_index] = \
-                                        self.array[array_index], (None, None)
+                self.array[array_index], (None, None)
             return val
-    
+
     def contains(self, k):
         return self._find_array_index(k) != "not found"
 
