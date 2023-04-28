@@ -65,42 +65,32 @@ Available options and values are:
 
 We provide commands we executed to generate figures in our report. Specifically:
 
-TODO: fill in this section after the report is ready
-
-## Figure X
-```
-$ python3 plot.py
-```
-## Figure Y
-```
-$ python3 plot.py
-```
-## Figure Z
-```
-$ python3 plot.py
-```
-
 ## Reproduce Results in Extension
+First, `cd tests && mkdir figures`.
+Figure 9 and 11 can be reproduced by running
+```
+python3 plot.py --dataset capture_bili_20k
+```
 
 ## Unbiased RTT Measurements
 
 ### CDF plots
 ```
-$ python3 ext_bias_cdf.py --dataset smallFlows --packet-tracker-size {32,256}
+python3 ext_bias_cdf.py --dataset smallFlows --packet-tracker-size {32,256}
 ```
 
 ```
-$ python3 ext_bias_cdf.py --dataset capture_4 --outgoing-only --packet-tracker-size 16
+python3 ext_bias_cdf.py --dataset capture_4 --outgoing-only --packet-tracker-size 16
 ```
 
 ### Count calculation
 ```
-$ python3 ext_bias_count.py --dataset capture_4 --outgoing-only --packet-tracker-size {64,128,256,512,1024,2048}
+python3 ext_bias_count.py --dataset capture_4 --outgoing-only --packet-tracker-size {64,128,256,512,1024,2048}
 ```
 
 ### Collection error calculation
 ```
-$ python3 ext_bias_error.py --dataset smallFlows --packet-tracker-size 15000
+python3 ext_bias_error.py --dataset smallFlows --packet-tracker-size 15000
 ```
 
 ## Switch Memory Allocation

@@ -1,0 +1,8 @@
+
+
+__DIRTY_CODE_NUM_OF_EVICTION = 0
+
+
+def increase():
+    global __DIRTY_CODE_NUM_OF_EVICTION
+    __DIRTY_CODE_NUM_OF_EVICTION += 1
