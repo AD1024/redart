@@ -130,7 +130,8 @@ def plot_cdf(ax, ax_large, ub=("y", 1.0)):
     # x_dart, y_dart = get_cdf(dart_entries)
     ax_large.plot(x_dart_large, y_dart_large, label="ReDart", color=cmap(0))
     # x_truth, y_truth = get_cdf(truth_entries)
-    ax_large.plot(x_truth_large, y_truth_large, label="TCPtrace", color=cmap(1))
+    ax_large.plot(x_truth_large, y_truth_large,
+                  label="TCPtrace", color=cmap(1))
     ax_large.legend(loc='upper right')
     ax_large.set_xlabel("RTT(ms)")
     ax_large.set_ylabel("CDF")
@@ -162,6 +163,7 @@ plot_cdf(axs[0], axs[1], ub)
 cdf.savefig("figures/{}_{}_{}_{}_cdf.png".format(dataset,
             args.pt_policy, args.rt_policy, args.packet_tracker_size), dpi=300)
 
+
 def test_dart_for_size(sz):
     dart = test_dart_trackers.test_flow(
         f, truth[2], pt_capacity=sz,
@@ -181,11 +183,12 @@ def test_dart_for_size(sz):
     dart_entries = all_entries(dart_values.values())
     return len(dart_entries)
 
+
 pt_x = []
 pt_y = []
 
 for _sz in range(6, 16):
-# for _sz in [13, 14]:
+    # for _sz in [13, 14]:
     sz = (2 ** _sz) - 1
     result = test_dart_for_size(sz)
     pt_x.append(_sz)
@@ -199,4 +202,4 @@ axs.plot(pt_x, pt_y)
 axs.set_xlabel("log2(Table Size)")
 axs.set_ylabel("RTT Count Fraction (%)")
 sz_plot.savefig("figures/{}_{}_{}_size.png".format(dataset,
-            args.pt_policy, args.rt_policy), dpi=300)
+                                                   args.pt_policy, args.rt_policy), dpi=300)

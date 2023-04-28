@@ -116,8 +116,10 @@ truth_entries = all_entries(truth_values.values())
 print(f'Number of samples collected')
 print(f'TCPtrace\t{len(truth_entries)}')
 print(f'Dart\t{len(dart_entries)}\t{len(dart_entries)/len(truth_entries)}')
-print(f'Favor-new\t{len(prob_entries)}\t{len(prob_entries)/len(truth_entries)}')
-print(f'Recirc-probability\t{len(prob_recirc_entries)}\t{len(prob_recirc_entries)/len(truth_entries)}')
+print(
+    f'Favor-new\t{len(prob_entries)}\t{len(prob_entries)/len(truth_entries)}')
+print(
+    f'Recirc-probability\t{len(prob_recirc_entries)}\t{len(prob_recirc_entries)/len(truth_entries)}')
 
 print("----------------------------------")
 print(len(dart_entries)/len(truth_entries))
@@ -151,7 +153,6 @@ print(len(prob_recirc_entries)/len(truth_entries))
 #     ax.set_xlabel("RTT(ms)")
 #     ax.set_ylabel("CDF")
 #     ax.set_title(dataset)
-
 
 
 # cdf, axs = plt.subplots(1, 1)

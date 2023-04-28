@@ -133,14 +133,14 @@ def plot_cdf(ax, ub=("y", 1.0)):
     x_prob, y_prob = get_cdf(prob_entries)
     ax.plot(x_prob, y_prob, label="Favor-new", color=cmap(1))
     x_prob_recirc, y_prob_recirc = get_cdf(prob_recirc_entries)
-    ax.plot(x_prob_recirc, y_prob_recirc, label="Recirc-probability", color=cmap(2))
+    ax.plot(x_prob_recirc, y_prob_recirc,
+            label="Recirc-probability", color=cmap(2))
     x_truth, y_truth = get_cdf(truth_entries)
     ax.plot(x_truth, y_truth, label="TCPtrace", color=cmap(3))
     ax.legend(loc='lower right')
     ax.set_xlabel("RTT(ms)")
     ax.set_ylabel("CDF")
     ax.set_title(dataset)
-
 
 
 cdf, axs = plt.subplots(1, 1)
