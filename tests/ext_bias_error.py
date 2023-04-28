@@ -113,13 +113,45 @@ prob_entries = all_entries(prob_values.values())
 prob_recirc_entries = all_entries(prob_recirc_values.values())
 truth_entries = all_entries(truth_values.values())
 
-print(f'Number of samples collected')
-print(f'TCPtrace\t{len(truth_entries)}')
-print(f'Dart\t{len(dart_entries)}\t{len(dart_entries)/len(truth_entries)}')
-print(f'Favor-new\t{len(prob_entries)}\t{len(prob_entries)/len(truth_entries)}')
-print(f'Recirc-probability\t{len(prob_recirc_entries)}\t{len(prob_recirc_entries)/len(truth_entries)}')
+dart_entries.sort()
+prob_entries.sort()
+prob_recirc_entries.sort()
+truth_entries.sort()
 
-print("----------------------------------")
-print(len(dart_entries)/len(truth_entries))
-print(len(prob_entries)/len(truth_entries))
-print(len(prob_recirc_entries)/len(truth_entries))
+
+
+def calculate_percentile(entry_array, p):
+    p = p/100
+    # entry_array.sort()
+    total = len(entry_array)
+    index = int(total*p)
+    truth_total = len(truth_entries)
+    truth_index = int(truth_total*p)
+    # print(f'{p},{total},{index},{truth_total},{truth_index}')
+    # print(f'{entry_array[index]},{truth_entries[truth_index]}')
+    return (entry_array[index]-truth_entries[truth_index])/truth_entries[truth_index]
+
+def calculate_max_error_percentile(entry_array):
+    max_error = -1
+    for p in range(5, 96):
+        max_error = max(max_error, abs(calculate_percentile(entry_array,p)))
+    return max_error
+
+print(f'RTT collection error')
+print(f'Dart')
+print(f'{calculate_percentile(dart_entries,50)}')
+print(f'{calculate_percentile(dart_entries,95)}')
+print(f'{calculate_percentile(dart_entries,99)}')
+print(f'{calculate_max_error_percentile(dart_entries)}')
+
+print(f'Favor-new')
+print(f'{calculate_percentile(prob_entries,50)}')
+print(f'{calculate_percentile(prob_entries,95)}')
+print(f'{calculate_percentile(prob_entries,99)}')
+print(f'{calculate_max_error_percentile(prob_entries)}')
+
+print(f'Recirc-probability')
+print(f'{calculate_percentile(prob_recirc_entries,50)}')
+print(f'{calculate_percentile(prob_recirc_entries,95)}')
+print(f'{calculate_percentile(prob_recirc_entries,99)}')
+print(f'{calculate_max_error_percentile(prob_recirc_entries)}')
