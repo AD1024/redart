@@ -119,7 +119,6 @@ prob_recirc_entries.sort()
 truth_entries.sort()
 
 
-
 def calculate_percentile(entry_array, p):
     p = p/100
     # entry_array.sort()
@@ -131,11 +130,13 @@ def calculate_percentile(entry_array, p):
     # print(f'{entry_array[index]},{truth_entries[truth_index]}')
     return (entry_array[index]-truth_entries[truth_index])/truth_entries[truth_index]
 
+
 def calculate_max_error_percentile(entry_array):
     max_error = -1
     for p in range(5, 96):
-        max_error = max(max_error, abs(calculate_percentile(entry_array,p)))
+        max_error = max(max_error, abs(calculate_percentile(entry_array, p)))
     return max_error
+
 
 print(f'RTT collection error')
 print(f'Dart')

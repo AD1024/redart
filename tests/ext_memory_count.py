@@ -60,8 +60,6 @@ for pkt in truth[0]:
 def all_entries(d): return functools.reduce(lambda x, y: x + y, d, [])
 
 
-
-
 count_list = list()
 percent_list = list()
 
@@ -74,7 +72,7 @@ percent_list.append(1)
 
 print("===================== DART =====================")
 
-for p in range(5,10):
+for p in range(5, 10):
     p = p/10
     print(f'p={p}')
     pt_size = args.total_size * p
@@ -92,7 +90,6 @@ for p in range(5,10):
             dart_values[pkt[0:4]] = pkt[4]
         else:
             dart_values[(pkt[2], pkt[3], pkt[0], pkt[1])] = pkt[4]
-
 
     dart_entries = all_entries(dart_values.values())
 
