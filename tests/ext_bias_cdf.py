@@ -38,7 +38,8 @@ rt_eviction_policies = {
 dataset = args.dataset
 f = "../data/{}.pcap".format(dataset)
 
-redart.init(redart.config.TimestampScale.MILLISECOND, ignore_syn=True)
+redart.init(redart.config.TimestampScale.MILLISECOND,
+            logging_level='CRITICAL', ignore_syn=True)
 
 print("===================== TRUTH =====================")
 truth = run_ground_truth.main(

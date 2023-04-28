@@ -65,7 +65,7 @@ Available options and values are:
 
 We provide commands we executed to generate figures in our report. Specifically:
 
-## Reproduce Results in Extension
+## Reproduce Results
 First, `cd tests && mkdir figures`.
 Figure 9 and 11 can be reproduced by running
 ```
