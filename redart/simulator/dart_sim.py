@@ -118,8 +118,8 @@ class PacketTrackerEvictionNewPacketWithProbabilityNoRecirculation(EvictionTrait
                          values[0].src, values[0].dst, values[0].index)
         self.tracker: PacketTracker
         (old_packet, new_value) = values
+        assert old_packet in self.tracker
         if random.uniform(0, 1) < self.probability:
-            self.tracker.pop(old_packet)
             self.tracker[old_packet] = new_value
 
 
@@ -136,15 +136,14 @@ class PacketTrackerEvictionNewPacketWithProbabilityWithRecirculation(EvictionTra
                             values[0].src, values[0].dst, values[0].index)
         self.tracker: PacketTracker
         (old_packet, new_value) = values
+        assert old_packet in self.tracker
         if old_packet in self.tracker.range_tracker_ref:
             rt_entry = self.tracker.range_tracker_ref[old_packet]
             eack = old_packet.seq + old_packet.size
             if rt_entry.tracking_range.highest_ack < eack <= rt_entry.tracking_range.highest_eack:
                 if random.uniform(0, 1) < self.probability:
-                    self.tracker.pop(old_packet)
                     self.tracker[old_packet] = new_value
                 return
-        self.tracker.pop(old_packet)
         self.tracker[old_packet] = new_value
 
 
