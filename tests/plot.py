@@ -1,5 +1,6 @@
 import argparse
 import functools
+import os
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -9,7 +10,6 @@ import test_dart_trackers
 
 import redart
 from redart.simulator import dart_sim, tcp_trace_sim
-import os
 
 os.environ['MYNUMBEROFSTAGE'] = '1'
 
@@ -179,12 +179,12 @@ def test_dart_for_size_or_stage(sz, st):
     else:
         os.environ['MYNUMBEROFSTAGE'] = str(st)
         dart, sim = test_dart_trackers.test_flow(
-            f, truth[2], pt_capacity=args.packet_tracker_size,
+            f, truth[2], pt_capacity=16384,
             pt_policy=eviction_policies[args.pt_policy],
             outgoing_only=args.outgoing_only,
             rt_policy=rt_eviction_policies[args.rt_policy],
             total_capacity=args.total_size)
-        
+
     dart_values = {}
     # print(dart[0])
 
@@ -271,7 +271,8 @@ for _st in range(1, 9):
         sim: dart_sim.DartSimulator
 
         pt_y[-1] += (100.0 * len(result) / len(truth_entries))
-        pt_z[-1] += sim.range_tracker.packet_tracker_ref.recirc_count / len(truth[2])
+        pt_z[-1] += sim.range_tracker.packet_tracker_ref.recirc_count / \
+            len(truth[2])
         print("Num recirc: ", sim.range_tracker.packet_tracker_ref.recirc_count)
 
         result.sort()

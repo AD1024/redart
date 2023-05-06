@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """This module contains the CuckooHash class."""
 
+import os
 import sys
 from numbers import Number
 from random import randint
-import os
 
 
 class CuckooHash(object):
@@ -90,6 +90,9 @@ class CuckooHash(object):
                 return self._set_helper(slot_key, slot_val, num_iters + 1)
 
     def first_collision(self, key):
+        keys = self._get_hashes(key)
+        if any([self.array[k][0] is None and self.array[k][1] is None for k in keys]):
+            return None
         for i in self._get_hashes(key):
             if self.array[i][0] is not None and self.array[i][1] is not None:
                 return self.array[i][1]
