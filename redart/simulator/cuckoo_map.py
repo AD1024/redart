@@ -5,8 +5,7 @@
 import sys
 from numbers import Number
 from random import randint
-
-sys.setrecursionlimit(100000)
+import os
 
 
 class CuckooHash(object):
@@ -19,9 +18,12 @@ class CuckooHash(object):
         self.nitems = 0
         self.array = [(None, None)] * int(size)
 
-        self._num_hashes = 8
+        # self._num_hashes = 8
+        self._num_hashes = int(os.environ['MYNUMBEROFSTAGE'])
         self._max_path_size = size
         self._random_nums = self._get_new_random_nums()
+
+        print("Initializing CuckooHash with size %d" % self._num_hashes)
 
     @staticmethod
     def _assert_valid_size(size):

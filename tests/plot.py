@@ -9,6 +9,9 @@ import test_dart_trackers
 
 import redart
 from redart.simulator import dart_sim, tcp_trace_sim
+import os
+
+os.environ['MYNUMBEROFSTAGE'] = '1'
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="test")
@@ -165,13 +168,23 @@ cdf.savefig("figures/{}_{}_{}_{}_cdf.png".format(dataset,
             args.pt_policy, args.rt_policy, args.packet_tracker_size), dpi=300)
 
 
-def test_dart_for_size(sz):
-    dart, sim = test_dart_trackers.test_flow(
-        f, truth[2], pt_capacity=sz,
-        pt_policy=eviction_policies[args.pt_policy],
-        outgoing_only=args.outgoing_only,
-        rt_policy=rt_eviction_policies[args.rt_policy],
-        total_capacity=sz + 20000)
+def test_dart_for_size_or_stage(sz, st):
+    if sz is not None:
+        dart, sim = test_dart_trackers.test_flow(
+            f, truth[2], pt_capacity=sz,
+            pt_policy=eviction_policies[args.pt_policy],
+            outgoing_only=args.outgoing_only,
+            rt_policy=rt_eviction_policies[args.rt_policy],
+            total_capacity=sz + 20000)
+    else:
+        os.environ['MYNUMBEROFSTAGE'] = str(st)
+        dart, sim = test_dart_trackers.test_flow(
+            f, truth[2], pt_capacity=args.packet_tracker_size,
+            pt_policy=eviction_policies[args.pt_policy],
+            outgoing_only=args.outgoing_only,
+            rt_policy=rt_eviction_policies[args.rt_policy],
+            total_capacity=args.total_size)
+        
     dart_values = {}
     # print(dart[0])
 
@@ -197,41 +210,105 @@ t50 = truth_entries[int(len(truth_entries) * 0.5)]
 t95 = truth_entries[int(len(truth_entries) * 0.95)]
 t99 = truth_entries[int(len(truth_entries) * 0.99)]
 
-for _sz in range(9, 17):
-    # for _sz in [8, 9]:
-    sz = (2 ** _sz) + 1
-    result, sim = test_dart_for_size(sz)
-    sim: dart_sim.DartSimulator
-    pt_x.append(_sz)
+# for _sz in range(9, 17):
+#     # for _sz in [8, 9]:
+#     sz = (2 ** _sz) + 1
+#     result, sim = test_dart_for_size_or_stage(sz, None)
+#     sim: dart_sim.DartSimulator
+#     pt_x.append(_sz)
 
-    pt_y.append(100.0 * len(result) / len(truth_entries))
-    pt_z.append(
-        sim.range_tracker.packet_tracker_ref.recirc_count / len(truth[2]))
-    print("Num recirc: ", sim.range_tracker.packet_tracker_ref.recirc_count)
+#     pt_y.append(100.0 * len(result) / len(truth_entries))
+#     pt_z.append(
+#         sim.range_tracker.packet_tracker_ref.recirc_count / len(truth[2]))
+#     print("Num recirc: ", sim.range_tracker.packet_tracker_ref.recirc_count)
 
-    result.sort()
-    pt_r50.append(abs(result[int(len(result) * 0.5)] / t50 - 1)*100)
-    pt_r95.append(abs(result[int(len(result) * 0.95)] / t95 - 1)*100)
-    pt_r99.append(abs(result[int(len(result) * 0.99)] / t99 - 1)*100)
+#     result.sort()
+#     pt_r50.append(abs(result[int(len(result) * 0.5)] / t50 - 1)*100)
+#     pt_r95.append(abs(result[int(len(result) * 0.95)] / t95 - 1)*100)
+#     pt_r99.append(abs(result[int(len(result) * 0.99)] / t99 - 1)*100)
+
+# for _sz in range(9, 17):
+#     sz = (2 ** _sz) + 1
+
+#     pt_x.append(_sz)
+#     pt_y.append(0)
+#     pt_z.append(0)
+#     pt_r50.append(0)
+#     pt_r95.append(0)
+#     pt_r99.append(0)
+#     _t = 6
+
+#     for _ in range(_t):
+#         result, sim = test_dart_for_size_or_stage(sz, None)
+#         sim: dart_sim.DartSimulator
+
+#         pt_y[-1] += (100.0 * len(result) / len(truth_entries))
+#         pt_z[-1] += sim.range_tracker.packet_tracker_ref.recirc_count / len(truth[2])
+#         print("Num recirc: ", sim.range_tracker.packet_tracker_ref.recirc_count)
+
+#         result.sort()
+#         pt_r50[-1] += ((result[int(len(result) * 0.5)] / t50 - 1)*100)
+#         pt_r95[-1] += ((result[int(len(result) * 0.95)] / t95 - 1)*100)
+#         pt_r99[-1] += ((result[int(len(result) * 0.99)] / t99 - 1)*100)
+
+#     pt_y[-1] /= _t
+#     pt_z[-1] /= _t
+#     pt_r50[-1] /= _t
+#     pt_r95[-1] /= _t
+#     pt_r99[-1] /= _t
+
+for _st in range(1, 9):
+    pt_x.append(_st)
+    pt_y.append(0)
+    pt_z.append(0)
+    pt_r50.append(0)
+    pt_r95.append(0)
+    pt_r99.append(0)
+    _t = 8
+
+    for _ in range(_t):
+        result, sim = test_dart_for_size_or_stage(None, _st)
+        sim: dart_sim.DartSimulator
+
+        pt_y[-1] += (100.0 * len(result) / len(truth_entries))
+        pt_z[-1] += sim.range_tracker.packet_tracker_ref.recirc_count / len(truth[2])
+        print("Num recirc: ", sim.range_tracker.packet_tracker_ref.recirc_count)
+
+        result.sort()
+        pt_r50[-1] += ((result[int(len(result) * 0.5)] / t50 - 1)*100)
+        pt_r95[-1] += ((result[int(len(result) * 0.95)] / t95 - 1)*100)
+        pt_r99[-1] += ((result[int(len(result) * 0.99)] / t99 - 1)*100)
+
+    pt_y[-1] /= _t
+    pt_z[-1] /= _t
+    pt_r50[-1] /= _t
+    pt_r95[-1] /= _t
+    pt_r99[-1] /= _t
 
 print(pt_x, pt_y, pt_z)
 
-sz_plot, axs = plt.subplots(1, 3, figsize=(13, 5))
+sz_plot, axs = plt.subplots(1, 3, figsize=(18, 5))
 axs[0].plot(pt_x, pt_r50, "-.o", label="50th percentile")
 axs[0].plot(pt_x, pt_r95, "-.o", label="95th percentile")
 axs[0].plot(pt_x, pt_r99, "-.o", label="99th percentile")
-axs[0].legend(loc='upper right')
-axs[0].set_xlabel("log2(Table Size)")
+axs[0].legend(loc='upper left')
+# axs[0].set_xlabel("log2(Table Size)")
+axs[0].set_xlabel("No. of Stages in PT Table")
 axs[0].set_ylabel("RTT Collection Error (%)")
+axs[0].set_title("(a) RTT Collection Error")
 
 axs[1].plot(pt_x, pt_y, "-o")
-axs[1].set_xlabel("log2(Table Size)")
+# axs[1].set_xlabel("log2(Table Size)")
+axs[1].set_xlabel("No. of Stages in PT Table")
 axs[1].set_ylabel("RTT Count Fraction (%)")
+axs[1].set_title("(b) Fraction of RTT samples collected")
 
 
 axs[2].plot(pt_x, pt_z, "-o")
-axs[2].set_xlabel("log2(Table Size)")
+# axs[2].set_xlabel("log2(Table Size)")
+axs[2].set_xlabel("No. of Stages in PT Table")
 axs[2].set_ylabel("Recirculations Per Packet")
+axs[2].set_title("(c) Recirculations incurred per packet")
 
 sz_plot.savefig("figures/{}_{}_{}_size.png".format(dataset,
                                                    args.pt_policy, args.rt_policy), dpi=300)
